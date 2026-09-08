@@ -13,6 +13,17 @@ const STT_LANGUAGE_BY_UI_LANG: Record<string, string> = {
   ur: "hi",
 };
 
+// A moderate ~15% slowdown (1.0 is normal pace) — the customer specifically
+// asked to slow her down "a bit", not a lot, and 0.85 is comfortably inside
+// ElevenLabs' accepted 0.8-1.2 range with headroom to go lower later if it's
+// still too fast. The provider itself is a considered guess, not something
+// LiveAvatar exposes for inspection (checked: neither the avatar's own nor
+// the voice's own detail endpoint reports which TTS backend it runs on) —
+// elevenLabs is the field tested clean through an actual session start, not
+// just schema validation, so it's a safe bet even if it turns out to be
+// switching the engine rather than only tuning an existing one.
+const VOICE_SETTINGS = { provider: "elevenLabs" as const, speed: 0.85 };
+
 // Mints a short-lived LiveAvatar session token server-side. LIVEAVATAR_API_KEY
 // is a secret that must never reach the browser — this route is the only
 // place it's read, and only a session_token (already scoped to one session)
@@ -50,7 +61,11 @@ export async function POST(req: Request) {
             avatar_id: avatarId,
             mode: "FULL",
             llm_configuration_id: llmConfigId,
-            avatar_persona: { context_id: contextId, language: sttLanguage },
+            avatar_persona: {
+              context_id: contextId,
+              language: sttLanguage,
+              voice_settings: VOICE_SETTINGS,
+            },
           }
         : {
             avatar_id: avatarId,
