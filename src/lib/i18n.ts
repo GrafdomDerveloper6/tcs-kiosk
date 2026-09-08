@@ -5,8 +5,6 @@ type Dict = Record<string, string>;
 export const DICT: Record<Lang, Dict> = {
   en: {
     dir: "ltr",
-    welcomeGreeting:
-      "Welcome to TCS — we move you! I'm Sana, your assistant. Let's get started.",
     attractTitle: "Self-Service Kiosk",
     attractTap: "Tap anywhere to begin",
     languageHeadline: "Welcome to TCS",
@@ -72,8 +70,6 @@ export const DICT: Record<Lang, Dict> = {
   },
   ur: {
     dir: "rtl",
-    welcomeGreeting:
-      "TCS میں خوش آمدید — ہم آپ کو منزل تک پہنچاتے ہیں! میں سعنا ہوں، آپ کی معاون۔ آئیے شروع کرتے ہیں۔",
     attractTitle: "سیلف سروس کیوسک",
     attractTap: "شروع کرنے کے لیے کہیں بھی ٹچ کریں",
     languageHeadline: "TCS میں خوش آمدید",

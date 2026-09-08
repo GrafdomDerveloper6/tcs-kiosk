@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { t, type Lang } from "@/lib/i18n";
+import type { Lang } from "@/lib/i18n";
 import {
   FORM_SCREENS,
   freshAssistantState,
@@ -29,7 +29,6 @@ export function useKiosk() {
   const stateRef = useRef(state);
   const assistantRef = useRef(assistant);
   const lastActivity = useRef(0);
-  const voicesCache = useRef<SpeechSynthesisVoice[]>([]);
   const avatar = useLiveAvatarSession();
 
   // Keep "latest value" refs in sync after each commit rather than mutating
@@ -43,41 +42,6 @@ export function useKiosk() {
   }, [assistant]);
   useEffect(() => {
     lastActivity.current = Date.now();
-  }, []);
-
-  /* ---------- Speech ---------- */
-  useEffect(() => {
-    if (!("speechSynthesis" in window)) return;
-    const load = () => {
-      voicesCache.current = window.speechSynthesis.getVoices();
-    };
-    load();
-    window.speechSynthesis.onvoiceschanged = load;
-  }, []);
-
-  const speak = useCallback((text: string, lang: Lang, onEnd?: () => void) => {
-    if (!("speechSynthesis" in window)) {
-      onEnd?.();
-      return;
-    }
-    try {
-      window.speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text);
-      const langCode = lang === "ur" ? "ur-PK" : "en-US";
-      u.lang = langCode;
-      const match = voicesCache.current.find((v) =>
-        v.lang?.toLowerCase().startsWith(langCode.split("-")[0])
-      );
-      if (match) u.voice = match;
-      if (onEnd) {
-        u.onend = () => onEnd();
-        u.onerror = () => onEnd();
-      }
-      window.speechSynthesis.speak(u);
-    } catch {
-      /* speech synthesis unsupported/blocked — non-fatal for the demo */
-      onEnd?.();
-    }
   }, []);
 
   /* ---------- Idle / reset ---------- */
@@ -101,7 +65,6 @@ export function useKiosk() {
   }, [markActivity]);
 
   const resetToAttract = useCallback(() => {
-    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
     avatar.stop();
     setState(freshState());
     setAssistant(freshAssistantState());
@@ -169,7 +132,6 @@ export function useKiosk() {
   }, [avatar.stop]);
 
   const resetToLanguage = useCallback(() => {
-    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
     avatar.stop();
     setState((prev) => ({ ...freshState(), lang: prev.lang, screen: "language" }));
     setAssistant(freshAssistantState());
@@ -177,10 +139,8 @@ export function useKiosk() {
 
   /* ---------- Flow transitions ---------- */
   const onTapStart = useCallback(() => {
-    const lang = stateRef.current.lang;
     setState((prev) => ({ ...prev, screen: "language" }));
-    setTimeout(() => speak(t(lang, "welcomeGreeting"), lang), 200);
-  }, [speak]);
+  }, []);
 
   const onLanguageSelected = useCallback(
     (lang: Lang) => {
@@ -335,22 +295,15 @@ export function useKiosk() {
   );
 
   const onConfirmPay = useCallback(() => {
-    const lang = stateRef.current.lang;
     goTo("payment");
-    setTimeout(() => speak(t(lang, "paymentHeadline"), lang), 200);
-  }, [goTo, speak]);
+  }, [goTo]);
 
-  const onSimulatePayment = useCallback(
-    (methodLabel: string) => {
-      setTimeout(() => {
-        const lang = stateRef.current.lang;
-        const receipt = generateReceipt(stateRef.current.booking, methodLabel);
-        setState((prev) => ({ ...prev, receipt }));
-        speak(t(lang, "paymentSuccess"), lang);
-      }, 900);
-    },
-    [speak]
-  );
+  const onSimulatePayment = useCallback((methodLabel: string) => {
+    setTimeout(() => {
+      const receipt = generateReceipt(stateRef.current.booking, methodLabel);
+      setState((prev) => ({ ...prev, receipt }));
+    }, 900);
+  }, []);
 
   const onGoBack = useCallback(() => {
     goBackScreen();
