@@ -160,21 +160,31 @@ export function AssistantScreen({
           autoPlay
           playsInline
         />
-        {/* A static photo of Sana, always on screen — HeyGen's own preview
-            image for this avatar, already a genuine cutout (real alpha
-            channel, not baked-in white). Talk only replaces this with the
-            live feed once the stream actually has frames to show; without
-            it the avatar column would just be empty white space until the
-            first live frame arrives, several seconds after tapping Talk. */}
-        <Image
-          src="/sana-poster.png"
-          alt=""
-          fill
-          priority
-          className="avatar-poster"
-          hidden={ready}
-        />
-        <canvas ref={canvasRef} className="avatar-keyed-canvas" hidden={!ready} />
+        {/* A fixed-proportion portrait frame, centered in the column —
+            the source is a landscape 1280x720 shot, and the column's own
+            aspect ratio swings from near-square down to a thin vertical
+            strip depending on screen size. Fitting the raw landscape frame
+            straight into that (object-fit: contain) shrank her to a small
+            floating image on narrower screens; cropping it straight (cover)
+            looked right there but sliced into her hair at wider ones. A
+            frame with its own stable aspect ratio sidesteps both. */}
+        <div className="avatar-frame">
+          {/* A static photo of Sana, always on screen — HeyGen's own preview
+              image for this avatar, already a genuine cutout (real alpha
+              channel, not baked-in white). Talk only replaces this with the
+              live feed once the stream actually has frames to show; without
+              it the avatar column would just be empty white space until the
+              first live frame arrives, several seconds after tapping Talk. */}
+          <Image
+            src="/sana-poster.png"
+            alt=""
+            fill
+            priority
+            className="avatar-poster"
+            hidden={ready}
+          />
+          <canvas ref={canvasRef} className="avatar-keyed-canvas" hidden={!ready} />
+        </div>
         {needsUnmute && (
           <button className="voice-unmute-btn" onClick={onUnmute} aria-label={t(lang, "voiceUnmute")}>
             <Icon name="volumeMuted" />

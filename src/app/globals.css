@@ -227,6 +227,35 @@ h3 {
   flex: 0 0 44%;
   position: relative;
   align-self: stretch;
+  /* The frame below has its own fixed aspect ratio rather than stretching
+     to fill — the column's own proportions swing from near-square to a
+     thin vertical strip depending on screen size. On the tall-narrow end
+     that leaves real vertical slack; anchoring to the bottom groups her
+     with her own Talk/Cancel controls instead of floating in the middle
+     with empty space split awkwardly above and below. */
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 100px;
+  /* Exposes cqw/cqh below so the frame's exact size can be computed —
+     "size" (not just inline-size) because both dimensions matter for a
+     fixed-aspect box, and the column's own size never depends on this
+     child's, so there's no circularity. */
+  container-type: size;
+  container-name: avatarcol;
+}
+/* Placed after the base rule above on purpose — a later same-specificity
+   rule always wins regardless of whether its own media condition currently
+   matches, so an earlier copy of this would have been silently overridden
+   by the unconditional padding-bottom above at every width, phone included.
+   Stacked Talk/Cancel below 520px roughly doubles .voice-controls' height,
+   so the bottom-anchored frame needs proportionally more clearance above
+   it: 14 (controls' own bottom offset) + its ~102px stacked height + a
+   40px gap. */
+@media (max-width: 520px) {
+  .assistant-avatar-col {
+    padding-bottom: 156px;
+  }
 }
 /* The raw video keeps playing off-screen (still needed for audio and for
    LiveAvatar's own attach()/play() calls) — .avatar-keyed-canvas is what's
@@ -241,13 +270,29 @@ h3 {
   opacity: 0;
   pointer-events: none;
 }
+/* A stable 3:4 portrait-photo proportion, independent of the column's own
+   shape. `aspect-ratio` alone doesn't do this — it's a no-op once both
+   width and height are already definite (which 100%/100% both are), so the
+   exact size is computed by hand instead: each dimension takes the smaller
+   of "fill that axis" or "what the OTHER axis, filled, implies at a 3:4
+   ratio" — equivalent to object-fit: contain, but for a real element with
+   children rather than a replaced element. */
+.avatar-frame {
+  position: relative;
+  width: min(100cqw, 75cqh);
+  height: min(100cqh, 133.334cqw);
+}
 .avatar-poster,
 .avatar-keyed-canvas {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  /* Cropping is safe here (unlike on the raw landscape source): the frame
+     is always the same 3:4 shape, so this same crop composes consistently
+     everywhere instead of varying with the column's own proportions. */
+  object-fit: cover;
+  object-position: center 18%;
   display: block;
 }
 /* Guards the toggle above: without this, an element's own `display: block`
