@@ -1,17 +1,13 @@
 import { NextResponse } from "next/server";
 
-// LiveAvatar's own ASR runs against a specific language model per session —
-// it defaults to "en" if we never say otherwise, which is exactly why a
-// customer speaking Urdu was getting badly mangled recognition regardless
-// of which UI language they picked. LiveAvatar has no native "ur" code
-// (checked its /v1/languages list directly), but Urdu and Hindi are the
-// same spoken language for ASR purposes — same phonology and grammar,
-// different script — so "hi" is the deliberate, well-established stand-in
-// rather than falling back to English or an unhinted "auto" mode.
-const STT_LANGUAGE_BY_UI_LANG: Record<string, string> = {
-  en: "en",
-  ur: "hi",
-};
+// LiveAvatar's own ASR/session pipeline runs against a specific language
+// model — it defaults to "en" if we never say otherwise. Forced to "hi" for
+// every session regardless of which UI language the customer picked: same
+// voice, same accent, but her speech recognition and pronunciation handling
+// always run in Hindi mode now. (LiveAvatar has no native "ur" code — its
+// /v1/languages list doesn't carry one — and Urdu/Hindi are the same spoken
+// language for this purpose: same phonology and grammar, different script.)
+const SESSION_LANGUAGE = "hi";
 
 // A moderate ~15% slowdown (1.0 is normal pace) — the customer specifically
 // asked to slow her down "a bit", not a lot, and 0.85 is comfortably inside
@@ -28,7 +24,7 @@ const VOICE_SETTINGS = { provider: "elevenLabs" as const, speed: 0.85 };
 // is a secret that must never reach the browser — this route is the only
 // place it's read, and only a session_token (already scoped to one session)
 // is returned to the client.
-export async function POST(req: Request) {
+export async function POST() {
   const apiKey = process.env.LIVEAVATAR_API_KEY;
   const avatarId = process.env.LIVEAVATAR_AVATAR_ID;
   const llmConfigId = process.env.LIVEAVATAR_LLM_CONFIG_ID;
@@ -40,9 +36,6 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
-
-  const body = await req.json().catch(() => ({}));
-  const sttLanguage = STT_LANGUAGE_BY_UI_LANG[body?.lang] ?? "en";
 
   // FULL mode (with an LLM config + context) lets the avatar hold an
   // open-ended, natural conversation instead of just repeating text we feed
@@ -63,7 +56,7 @@ export async function POST(req: Request) {
             llm_configuration_id: llmConfigId,
             avatar_persona: {
               context_id: contextId,
-              language: sttLanguage,
+              language: SESSION_LANGUAGE,
               voice_settings: VOICE_SETTINGS,
             },
           }

@@ -65,21 +65,14 @@ export function useLiveAvatarSession() {
     }
   }, []);
 
-  const start = useCallback((lang: string): Promise<void> => {
+  const start = useCallback((): Promise<void> => {
     if (startingRef.current) return startingRef.current;
     if (sessionRef.current) return Promise.resolve();
 
     const promise = (async () => {
       try {
         const [{ LiveAvatarSession: Session, SessionEvent, AgentEventsEnum }, res] =
-          await Promise.all([
-            loadSdk(),
-            fetch("/api/liveavatar-token", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ lang }),
-            }),
-          ]);
+          await Promise.all([loadSdk(), fetch("/api/liveavatar-token", { method: "POST" })]);
         if (!res.ok) throw new Error("token request failed");
         const { sessionToken } = await res.json();
         if (!sessionToken) throw new Error("no session token returned");
