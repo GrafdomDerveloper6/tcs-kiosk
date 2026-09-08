@@ -133,6 +133,7 @@ export function KioskApp() {
             assistant={k.assistant}
             lang={lang}
             userSpeaking={k.userSpeaking}
+            ready={k.avatarReady}
             failed={k.avatarFailed}
             needsUnmute={k.avatarNeedsUnmute}
             setAvatarVideoEl={k.setAvatarVideoEl}

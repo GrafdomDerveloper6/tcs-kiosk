@@ -241,11 +241,20 @@ h3 {
   opacity: 0;
   pointer-events: none;
 }
+.avatar-poster,
 .avatar-keyed-canvas {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: contain;
   display: block;
+}
+/* Guards the toggle above: without this, an element's own `display: block`
+   has the same specificity as the browser's built-in `[hidden]` rule and,
+   coming later in the cascade, would quietly win — un-hiding it. */
+[hidden] {
+  display: none !important;
 }
 
 /* Assistant screen gets a larger headline than the narrower screens. */

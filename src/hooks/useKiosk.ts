@@ -314,6 +314,7 @@ export function useKiosk() {
     assistant,
     userSpeaking: avatar.userSpeaking,
     setAvatarVideoEl: avatar.setVideoEl,
+    avatarReady: avatar.ready,
     avatarFailed: avatar.failed,
     avatarNeedsUnmute: avatar.needsUnmute,
     unmuteAvatar: avatar.unmute,

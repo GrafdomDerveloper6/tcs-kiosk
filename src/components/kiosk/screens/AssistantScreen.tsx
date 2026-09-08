@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import type { AssistantState, BookingDraft } from "@/lib/kiosk-types";
 import { isDropoffComplete, isPickupComplete } from "@/lib/kiosk-utils";
 import { t, type Lang } from "@/lib/i18n";
@@ -68,6 +69,7 @@ export function AssistantScreen({
   assistant,
   lang,
   userSpeaking,
+  ready,
   failed,
   needsUnmute,
   setAvatarVideoEl,
@@ -81,6 +83,7 @@ export function AssistantScreen({
   assistant: AssistantState;
   lang: Lang;
   userSpeaking: boolean;
+  ready: boolean;
   failed: boolean;
   needsUnmute: boolean;
   setAvatarVideoEl: (el: HTMLVideoElement | null) => void;
@@ -157,7 +160,21 @@ export function AssistantScreen({
           autoPlay
           playsInline
         />
-        <canvas ref={canvasRef} className="avatar-keyed-canvas" />
+        {/* A static photo of Sana, always on screen — HeyGen's own preview
+            image for this avatar, already a genuine cutout (real alpha
+            channel, not baked-in white). Talk only replaces this with the
+            live feed once the stream actually has frames to show; without
+            it the avatar column would just be empty white space until the
+            first live frame arrives, several seconds after tapping Talk. */}
+        <Image
+          src="/sana-poster.png"
+          alt=""
+          fill
+          priority
+          className="avatar-poster"
+          hidden={ready}
+        />
+        <canvas ref={canvasRef} className="avatar-keyed-canvas" hidden={!ready} />
         {needsUnmute && (
           <button className="voice-unmute-btn" onClick={onUnmute} aria-label={t(lang, "voiceUnmute")}>
             <Icon name="volumeMuted" />
