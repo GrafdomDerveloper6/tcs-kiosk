@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>TCS Self-Service Kiosk — Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Inter:wght@400;500;600;700&family=Noto+Nastaliq+Urdu:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --tcs-red:      #E31E24;
+    --tcs-red-dark: #AE0F16;
+    --ink:          #16171C;
+    --ink-soft:     #33353D;
+    --paper:        #FFFFFF;
+    --mist:         #F4F4F6;
+    --line:         #E3E3E7;
+    --slate:        #6B7280;
+    --success:      #1E9E5A;
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; height:100%; }
+  body{
+    font-family:'Inter',sans-serif;
+    background:#0b0b0d;
+    color:var(--ink-soft);
+    -webkit-tap-highlight-color:transparent;
+  }
+  button{ font-family:inherit; }
+  h1,h2,h3{ font-family:'Barlow Condensed',sans-serif; margin:0; }
+  [dir="rtl"] h1,[dir="rtl"] h2,[dir="rtl"] h3,[dir="rtl"] p,[dir="rtl"] span,[dir="rtl"] div,[dir="rtl"] button{
+    font-family:'Noto Nastaliq Urdu','Barlow Condensed',sans-serif;
+  }
+
+  ::selection{ background:transparent; }
+  .kiosk *{ user-select:none; -webkit-user-select:none; touch-action:manipulation; }
+
+  :focus-visible{ outline:3px solid var(--tcs-red); outline-offset:2px; }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation:none !important; transition:none !important; }
+  }
+
+  /* ---------- Frame ---------- */
+  .viewport-bg{
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+    padding:20px;
+  }
+  .kiosk{
+    position:relative;
+    height:min(96vh,960px);
+    width:min(92vw, calc(min(96vh,960px) * 9 / 16));
+    aspect-ratio:9/16;
+    background:var(--paper);
+    border-radius:28px;
+    overflow:hidden;
+    box-shadow:0 30px 90px rgba(0,0,0,.55);
+    display:flex;
+    flex-direction:column;
+  }
+
+  /* ---------- Header ---------- */
+  .app-header{
+    flex:0 0 auto;
+    background:var(--ink);
+    color:#fff;
+    padding:18px 20px;
+    border-bottom:3px solid var(--tcs-red);
+    display:flex; align-items:center;
+    position:relative; z-index:5;
+  }
+  .app-header-logo{ font-weight:800; letter-spacing:.1em; font-size:14px; text-transform:uppercase; }
+  @keyframes listenPulse{ 0%,100%{ box-shadow:0 0 0 3px rgba(227,30,36,.7);} 50%{ box-shadow:0 0 0 7px rgba(227,30,36,.15);} }
+
+  /* ---------- Stepper ---------- */
+  .stepper{ display:flex; gap:5px; padding:10px 20px 0; flex:0 0 auto; }
+  .stepper .seg{ flex:1; height:4px; border-radius:2px; background:var(--line); }
+  .stepper .seg.done{ background:var(--tcs-red); }
+
+  /* ---------- Content ---------- */
+  .content-wrap{ position:relative; flex:1 1 auto; min-height:0; }
+  .bg-fx{ position:absolute; inset:0; overflow:hidden; z-index:0; pointer-events:none; }
+  .bg-fx span{ position:absolute; border-radius:50%; filter:blur(46px); }
+  .bg-fx span:nth-child(1){
+    width:260px; height:260px; top:-70px; left:-70px;
+    background:radial-gradient(circle, rgba(227,30,36,.20), rgba(227,30,36,0) 70%);
+    animation:drift1 16s ease-in-out infinite;
+  }
+  .bg-fx span:nth-child(2){
+    width:220px; height:220px; bottom:-60px; right:-60px;
+    background:radial-gradient(circle, rgba(22,23,28,.08), rgba(22,23,28,0) 70%);
+    animation:drift2 20s ease-in-out infinite;
+  }
+  .bg-fx span:nth-child(3){
+    width:190px; height:190px; top:38%; right:-70px;
+    background:radial-gradient(circle, rgba(227,30,36,.14), rgba(227,30,36,0) 70%);
+    animation:drift3 24s ease-in-out infinite;
+  }
+  @keyframes drift1{ 0%,100%{ transform:translate(0,0) scale(1);} 50%{ transform:translate(34px,44px) scale(1.08);} }
+  @keyframes drift2{ 0%,100%{ transform:translate(0,0) scale(1);} 50%{ transform:translate(-28px,-32px) scale(1.1);} }
+  @keyframes drift3{ 0%,100%{ transform:translate(0,0) scale(1);} 50%{ transform:translate(-22px,26px) scale(1.15);} }
+
+  .content{
+    position:relative; z-index:1;
+    height:100%; overflow-y:auto;
+    padding:22px 18px 18px;
+    display:flex; flex-direction:column; gap:14px;
+  }
+  .content::-webkit-scrollbar{ width:0; }
+
+  .headline{ font-size:26px; font-weight:800; color:var(--ink); line-height:1.1; }
+  .subhead{ font-size:14px; color:var(--slate); margin-top:4px; }
+  .rule{ width:44px; height:4px; background:var(--tcs-red); border-radius:2px; margin-top:10px; }
+
+  .card{
+    background:var(--paper); border:1px solid var(--line); border-radius:16px;
+    padding:16px; text-align:start; cursor:pointer;
+    display:flex; align-items:center; gap:14px;
+    min-height:64px;
+    transition:border-color .15s ease, transform .1s ease, box-shadow .15s ease;
+  }
+  .card:hover{ border-color:var(--tcs-red); box-shadow:0 6px 18px rgba(227,30,36,.08); }
+  .card:active{ transform:scale(.98); }
+  .card .icon{
+    width:44px; height:44px; border-radius:12px; background:var(--mist);
+    display:flex; align-items:center; justify-content:center; flex:0 0 auto;
+  }
+  .card .icon svg{ width:24px; height:24px; stroke:var(--tcs-red); fill:none; stroke-width:1.6; }
+  .card .txt{ min-width:0; }
+  .card .title{ font-weight:700; color:var(--ink); font-size:16px; font-family:'Inter',sans-serif; }
+  .card .desc{ font-size:12.5px; color:var(--slate); margin-top:2px; }
+  .card.selected{ border-color:var(--tcs-red); background:#fff6f6; }
+  .cards-col{ display:flex; flex-direction:column; gap:12px; margin-top:6px; }
+
+  /* ---------- Chat ---------- */
+  .chat{ display:flex; flex-direction:column; gap:10px; margin-top:4px; }
+  .bubble{ max-width:82%; padding:11px 14px; border-radius:16px; font-size:14.5px; line-height:1.4; }
+  .bubble.sana{ align-self:flex-start; background:var(--mist); color:var(--ink); border-bottom-left-radius:4px; }
+  .bubble.user{ align-self:flex-end; background:var(--tcs-red); color:#fff; border-bottom-right-radius:4px; }
+  [dir="rtl"] .bubble.sana{ align-self:flex-end; border-bottom-left-radius:16px; border-bottom-right-radius:4px; }
+  [dir="rtl"] .bubble.user{ align-self:flex-start; border-bottom-right-radius:16px; border-bottom-left-radius:4px; }
+  .chip-row{ display:flex; gap:10px; margin-top:2px; }
+  .chip{ flex:1; background:var(--paper); border:1.6px solid var(--line); border-radius:12px; padding:12px; min-height:64px; font-weight:700; color:var(--ink); cursor:pointer; }
+  .chip:hover{ border-color:var(--tcs-red); }
+  .chip.yes{ border-color:var(--success); color:var(--success); }
+  .chip.no{ border-color:var(--tcs-red); color:var(--tcs-red); }
+
+  .composer{ margin-top:auto; padding-top:10px; display:flex; gap:8px; position:sticky; bottom:0; background:linear-gradient(to top, var(--paper) 70%, rgba(255,255,255,0)); }
+  [dir="rtl"] .composer{ flex-direction:row-reverse; }
+  [dir="rtl"] .chip-row{ flex-direction:row-reverse; }
+  .composer input{
+    flex:1; border:1.6px solid var(--line); border-radius:14px; padding:0 14px;
+    height:52px; font-size:15px; font-family:inherit; color:var(--ink); min-width:0;
+  }
+  .composer input:focus{ border-color:var(--tcs-red); outline:none; }
+  .mic-btn, .send-btn{
+    width:52px; height:52px; border-radius:14px; border:none; flex:0 0 auto;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .mic-btn{ background:var(--mist); }
+  .mic-btn svg{ width:22px; height:22px; stroke:var(--ink); fill:none; stroke-width:1.8; }
+  .mic-btn.listening{ background:var(--tcs-red); animation:listenPulse 1.1s ease-in-out infinite; }
+  .mic-btn.listening svg{ stroke:#fff; }
+  .send-btn{ background:var(--tcs-red); }
+  .send-btn svg{ width:20px; height:20px; stroke:#fff; fill:none; stroke-width:2; }
+  [dir="rtl"] .send-btn svg{ transform:scaleX(-1); }
+  .listening-tag{ font-size:12.5px; color:var(--tcs-red); font-weight:600; padding-left:2px; }
+  [dir="rtl"] .listening-tag{ padding-left:0; padding-right:2px; }
+
+  /* ---------- Timeline ---------- */
+  .timeline{ display:flex; flex-direction:column; margin-top:6px; }
+  .t-row{ display:flex; gap:14px; }
+  .t-marker-col{ display:flex; flex-direction:column; align-items:center; }
+  .t-dot{ width:16px; height:16px; border-radius:50%; background:var(--line); border:3px solid var(--paper); box-shadow:0 0 0 1px var(--line); flex:0 0 auto; }
+  .t-dot.done{ background:var(--tcs-red); box-shadow:0 0 0 1px var(--tcs-red); }
+  .t-bar{ width:3px; flex:1; background:var(--line); min-height:28px; }
+  .t-bar.done{ background:var(--tcs-red); }
+  .t-body{ padding-bottom:22px; min-width:0; }
+  .t-title{ font-weight:700; color:var(--ink); font-size:14.5px; }
+  .t-title.done{ color:var(--tcs-red); }
+  [dir="rtl"] .t-row{ flex-direction:row-reverse; }
+
+  /* ---------- Summary / Review ---------- */
+  .summary-card{ background:var(--mist); border-radius:16px; padding:16px; display:flex; flex-direction:column; gap:10px; }
+  .s-row{ display:flex; justify-content:space-between; gap:10px; font-size:14px; }
+  .s-row .k{ color:var(--slate); }
+  .s-row .v{ color:var(--ink); font-weight:600; text-align:end; }
+  .s-div{ height:1px; background:var(--line); margin:2px 0; }
+  .s-row.total .k, .s-row.total .v{ font-size:18px; font-weight:800; color:var(--ink); }
+
+  .primary-btn{
+    background:var(--tcs-red); color:#fff; border:none; border-radius:14px;
+    min-height:64px; font-size:16px; font-weight:700; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .primary-btn:hover{ background:var(--tcs-red-dark); }
+  .primary-btn:active{ transform:scale(.99); }
+  .ghost-btn{
+    background:transparent; color:var(--tcs-red); border:1.6px solid var(--tcs-red); border-radius:14px;
+    min-height:56px; font-size:15px; font-weight:700; cursor:pointer;
+  }
+
+  /* ---------- QR / payment ---------- */
+  .qr-card{ background:var(--paper); border:1px solid var(--line); border-radius:16px; padding:18px; display:flex; flex-direction:column; align-items:center; gap:12px; }
+  .qr-grid{ display:grid; width:170px; height:170px; background:#fff; padding:8px; border-radius:8px; border:1px solid var(--line); }
+  .qr-cell{ background:transparent; }
+  .qr-cell.on{ background:var(--ink); }
+  .raast-tag{ font-size:12px; letter-spacing:.08em; color:var(--slate); font-weight:700; text-transform:uppercase; }
+  .spinner{ width:16px; height:16px; border-radius:50%; border:2.4px solid var(--line); border-top-color:var(--tcs-red); animation:spin .8s linear infinite; display:inline-block; }
+  @keyframes spin{ to{ transform:rotate(360deg);} }
+  .success-badge{ width:64px; height:64px; border-radius:50%; background:var(--success); display:flex; align-items:center; justify-content:center; margin:0 auto; }
+  .success-badge svg{ width:32px; height:32px; stroke:#fff; fill:none; stroke-width:3; }
+
+  /* ---------- Bottom bar ---------- */
+  .bottom-bar{
+    flex:0 0 auto; display:flex; border-top:1px solid var(--line); background:var(--paper); z-index:5;
+  }
+  .nav-btn{
+    flex:1; min-height:64px; background:none; border:none; cursor:pointer;
+    font-size:14px; font-weight:700; color:var(--ink-soft); display:flex; align-items:center; justify-content:center; gap:6px;
+  }
+  .nav-btn:disabled{ opacity:.35; cursor:default; }
+  .nav-btn svg{ width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:2; }
+  [dir="rtl"] .nav-btn.back svg{ transform:scaleX(-1); }
+  .nav-btn + .nav-btn{ border-left:1px solid var(--line); }
+  [dir="rtl"] .nav-btn + .nav-btn{ border-left:none; border-right:1px solid var(--line); }
+
+  /* ---------- Attract overlay ---------- */
+  .attract-overlay{
+    position:absolute; inset:0; background:var(--ink); color:#fff;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; cursor:pointer; z-index:10; overflow:hidden;
+  }
+  .attract-copy{ position:relative; z-index:1; padding:0 26px; }
+  .attract-logo{ color:var(--tcs-red); font-weight:800; font-size:15px; letter-spacing:.16em; }
+  .attract-title{ font-size:30px; font-weight:800; margin-top:10px; }
+  .attract-tap{ margin-top:16px; font-size:14px; color:#d8d9de; animation:tapPulse 1.6s ease-in-out infinite; }
+  @keyframes tapPulse{ 0%,100%{ opacity:.5;} 50%{ opacity:1;} }
+
+  /* ---------- Idle modal ---------- */
+  .modal-scrim{ position:absolute; inset:0; background:rgba(10,10,12,.55); display:flex; align-items:center; justify-content:center; z-index:20; padding:24px; }
+  .modal-card{ background:var(--paper); border-radius:18px; padding:22px; width:100%; max-width:320px; text-align:center; }
+  .modal-card h3{ font-size:22px; color:var(--ink); }
+  .modal-card p{ font-size:13.5px; color:var(--slate); margin:10px 0 16px; }
+  .modal-actions{ display:flex; flex-direction:column; gap:10px; }
+
+  .hidden{ display:none !important; }
+</style>
+</head>
+<body oncontextmenu="return false">
+
+<div class="viewport-bg">
+  <div class="kiosk" id="kiosk" dir="ltr">
+
+    <div class="app-header">
+      <div class="app-header-logo">TCS · WE MOVE YOU</div>
+    </div>
+
+    <div class="stepper hidden" id="stepper"></div>
+
+    <div class="content-wrap">
+      <div class="bg-fx"><span></span><span></span><span></span></div>
+      <div class="content" id="content" dir="ltr"></div>
+    </div>
+
+    <div class="bottom-bar" id="bottomBar">
+      <button class="nav-btn back" id="backBtn" data-action="go-back">
+        <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+        <span id="backLabel">Back</span>
+      </button>
+      <button class="nav-btn" id="homeBtn" data-action="go-home">
+        <svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/></svg>
+        <span id="homeLabel">Home</span>
+      </button>
+    </div>
+
+    <div class="attract-overlay" id="attractOverlay" data-action="tap-start">
+      <div class="attract-copy">
+        <div class="attract-logo">TCS · WE MOVE YOU</div>
+        <div class="attract-title" id="attractTitle">Self-Service Kiosk</div>
+        <div class="attract-tap" id="attractTap">Tap anywhere to begin</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+
+/* ==================== i18n ==================== */
+const DICT = {
+en:{
+  dir:'ltr', speechLang:'en-US',
+  welcomeGreeting:"Welcome to TCS — we move you! I'm Sana, your assistant. Let's get started.",
+  attractTitle:"Self-Service Kiosk", attractTap:"Tap anywhere to begin",
+  languageHeadline:"Welcome to TCS", languageSub:"Please choose your language",
+  langEnglish:"English", langUrdu:"اردو",
+  serviceHeadline:"How can I help you today?",
+  serviceTrackTitle:"Track My Order", serviceTrackDesc:"Check the status of an existing shipment",
+  serviceBookTitle:"Book a Delivery", serviceBookDesc:"Send a document or parcel",
+  trackAsk:"Sure, I can help with that. Please tell me your tracking number.",
+  trackPlaceholder:"e.g. TCS123456789",
+  trackConfirmPrefix:"I heard “{{value}}” — is that correct?",
+  yes:"Yes, that's right", no:"No, let me redo that",
+  trackResultHeadline:"Shipment status", trackResultEta:"Estimated delivery",
+  statusBooked:"Booked", statusPicked:"Picked up", statusTransit:"In transit",
+  statusOut:"Out for delivery", statusDelivered:"Delivered",
+  newRequest:"Start new request",
+  deliverTypeHeadline:"What would you like to send?",
+  docTitle:"Document", docDesc:"Letters, files, certificates",
+  parcelTitle:"Parcel", parcelDesc:"Packages up to 30 kg",
+  askName:"What's your full name?",
+  askPhone:"What's the best phone number to reach you?",
+  askStreet:"What's your street address?",
+  askCity:"Which city are you in?",
+  pickupDoneMsg:"Great, thanks {{name}} — I've got your pickup details.",
+  askRecipientName:"What's the recipient's full name?",
+  askRecipientPhone:"What's the recipient's phone number?",
+  askRecipientStreet:"What's the recipient's street address?",
+  askRecipientCity:"Which city will you be delivering to?",
+  dropoffDoneMsg:"Perfect — I've got the delivery details for {{name}}.",
+  speedHeadline:"How fast do you need it there?",
+  standardTitle:"Standard", standardDesc:"2–3 business days",
+  expressTitle:"Express", expressDesc:"Next business day",
+  reviewHeadline:"Review your booking",
+  labelItem:"Item type", labelRoute:"Route", labelService:"Service level",
+  labelBase:"Base fare", labelSurcharge:"Fuel surcharge", labelTax:"Tax (5%)", labelTotal:"Total",
+  confirmPay:"Confirm & Pay",
+  paymentHeadline:"Scan to pay with Raast",
+  paymentWaiting:"Waiting for payment confirmation…",
+  simulatePayment:"Simulate payment (demo)",
+  paymentSuccess:"Payment successful!",
+  receiptNumber:"Receipt No.", receiptTime:"Date & time", receiptTotal:"Total paid",
+  composerPlaceholder:"Type your answer…", send:"Send",
+  listening:"Listening…", tapMic:"Tap the mic to speak",
+  back:"Back", home:"Home",
+  idleTitle:"Still there?",
+  idleBody:"This session will restart in {{s}}s for the next customer.",
+  idleContinue:"I'm still here", idleReset:"Start over now",
+  docType:"Document", parcelType:"Parcel", standardSpeed:"Standard", expressSpeed:"Express",
+  trackFoundMsg:"Got it — let me look that up for you.",
+  continueLabel:"Continue",
+},
+ur:{
+  dir:'rtl', speechLang:'ur-PK',
+  welcomeGreeting:"TCS میں خوش آمدید — ہم آپ کو منزل تک پہنچاتے ہیں! میں سعنا ہوں، آپ کی معاون۔ آئیے شروع کرتے ہیں۔",
+  attractTitle:"سیلف سروس کیوسک", attractTap:"شروع کرنے کے لیے کہیں بھی ٹچ کریں",
+  languageHeadline:"TCS میں خوش آمدید", languageSub:"براہ کرم اپنی زبان منتخب کریں",
+  langEnglish:"English", langUrdu:"اردو",
+  serviceHeadline:"آج میں آپ کی کس طرح مدد کر سکتی ہوں؟",
+  serviceTrackTitle:"اپنا آرڈر ٹریک کریں", serviceTrackDesc:"موجودہ شپمنٹ کی صورتحال معلوم کریں",
+  serviceBookTitle:"ڈیلیوری بک کریں", serviceBookDesc:"دستاویز یا پارسل بھیجیں",
+  trackAsk:"ضرور! براہ کرم اپنا ٹریکنگ نمبر بتائیں۔",
+  trackPlaceholder:"مثلاً TCS123456789",
+  trackConfirmPrefix:"میں نے “{{value}}” سنا — کیا یہ درست ہے؟",
+  yes:"جی ہاں، درست ہے", no:"نہیں، دوبارہ بتائیں",
+  trackResultHeadline:"شپمنٹ کی صورتحال", trackResultEta:"متوقع ترسیل",
+  statusBooked:"بک ہو گیا", statusPicked:"وصول کر لیا گیا", statusTransit:"راستے میں",
+  statusOut:"ترسیل کے لیے روانہ", statusDelivered:"ترسیل ہو گئی",
+  newRequest:"نئی درخواست شروع کریں",
+  deliverTypeHeadline:"آپ کیا بھیجنا چاہتے ہیں؟",
+  docTitle:"دستاویز", docDesc:"خطوط، فائلیں، سرٹیفکیٹس",
+  parcelTitle:"پارسل", parcelDesc:"30 کلوگرام تک پیکجز",
+  askName:"آپ کا پورا نام کیا ہے؟",
+  askPhone:"رابطے کے لیے بہترین فون نمبر کیا ہے؟",
+  askStreet:"آپ کا گھر کا پتہ کیا ہے؟",
+  askCity:"آپ کس شہر میں ہیں؟",
+  pickupDoneMsg:"بہت خوب، شکریہ {{name}} — مجھے آپ کی وصولی کی تفصیلات مل گئی ہیں۔",
+  askRecipientName:"وصول کنندہ کا پورا نام کیا ہے؟",
+  askRecipientPhone:"وصول کنندہ کا فون نمبر کیا ہے؟",
+  askRecipientStreet:"وصول کنندہ کا گھر کا پتہ کیا ہے؟",
+  askRecipientCity:"ترسیل کس شہر میں کی جائے گی؟",
+  dropoffDoneMsg:"بہترین — مجھے {{name}} کے لیے ترسیل کی تفصیلات مل گئی ہیں۔",
+  speedHeadline:"آپ کو کتنی جلدی ترسیل چاہیے؟",
+  standardTitle:"معیاری", standardDesc:"2 سے 3 کاروباری دن",
+  expressTitle:"ایکسپریس", expressDesc:"اگلے کاروباری دن",
+  reviewHeadline:"اپنی بکنگ کا جائزہ لیں",
+  labelItem:"چیز کی قسم", labelRoute:"روٹ", labelService:"سروس لیول",
+  labelBase:"بنیادی کرایہ", labelSurcharge:"فیول سرچارج", labelTax:"ٹیکس (5%)", labelTotal:"کل رقم",
+  confirmPay:"تصدیق کریں اور ادائیگی کریں",
+  paymentHeadline:"راست کے ذریعے ادائیگی کے لیے اسکین کریں",
+  paymentWaiting:"ادائیگی کی تصدیق کا انتظار ہے…",
+  simulatePayment:"ادائیگی کی نقل کریں (ڈیمو)",
+  paymentSuccess:"ادائیگی کامیاب ہو گئی!",
+  receiptNumber:"رسید نمبر", receiptTime:"تاریخ اور وقت", receiptTotal:"ادا شدہ رقم",
+  composerPlaceholder:"اپنا جواب لکھیں…", send:"بھیجیں",
+  listening:"سن رہی ہوں…", tapMic:"بولنے کے لیے مائیک دبائیں",
+  back:"پیچھے", home:"ہوم",
+  idleTitle:"کیا آپ ابھی بھی موجود ہیں؟",
+  idleBody:"اگلے صارف کے لیے یہ سیشن {{s}} سیکنڈ میں دوبارہ شروع ہو جائے گا۔",
+  idleContinue:"میں یہیں ہوں", idleReset:"ابھی دوبارہ شروع کریں",
+  docType:"دستاویز", parcelType:"پارسل", standardSpeed:"معیاری", expressSpeed:"ایکسپریس",
+  trackFoundMsg:"ٹھیک ہے — میں ابھی معلوم کرتی ہوں۔",
+  continueLabel:"جاری رکھیں",
+}
+};
+
+function t(key, vars){
+  let s = (DICT[state.lang] && DICT[state.lang][key]) || key;
+  if(vars) for(const k in vars) s = s.replace('{{'+k+'}}', vars[k]);
+  return s;
+}
+
+/* ==================== State ==================== */
+const CANNED = {
+  en:{ name:"Ahmed Raza", phone:"0300 1234567", street:"House 12, Street 4, F-8/3", city:"Lahore", trackingNumber:"TCS884321056" },
+  ur:{ name:"احمد رضا", phone:"0300 1234567", street:"مکان 12، گلی 4، ایف-8/3", city:"لاہور", trackingNumber:"TCS884321056" }
+};
+
+const BOOKING_STEPS = ['deliverType','pickup','dropoff','speed','review','payment'];
+
+let state, conv, idleTimer, idleCountdownTimer;
+
+function freshState(){
+  return {
+    screen:'attract',
+    lang:'en',
+    backStack:[],
+    booking:{ deliveryType:null, pickup:{}, dropoff:{}, speed:null },
+    trackingNumber:null,
+    trackResult:null,
+    receipt:null,
+  };
+}
+state = freshState();
+
+/* ==================== Speech ==================== */
+let voicesCache = [];
+function loadVoices(){ voicesCache = ('speechSynthesis' in window) ? speechSynthesis.getVoices() : []; }
+if('speechSynthesis' in window){
+  loadVoices();
+  speechSynthesis.onvoiceschanged = loadVoices;
+}
+
+function speak(text){
+  if(!('speechSynthesis' in window)){ return; }
+  try{
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    const langCode = DICT[state.lang].speechLang;
+    u.lang = langCode;
+    const match = voicesCache.find(v=>v.lang && v.lang.toLowerCase().startsWith(langCode.split('-')[0]));
+    if(match) u.voice = match;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+
+/* ==================== Idle / reset ==================== */
+let lastActivity = Date.now();
+const IDLE_MS = 90000, COUNTDOWN_S = 15;
+
+function markActivity(){
+  lastActivity = Date.now();
+  const scrim = document.getElementById('idleScrim');
+  if(scrim){ scrim.remove(); clearInterval(idleCountdownTimer); }
+}
+
+function tickIdle(){
+  if(state.screen === 'attract') return;
+  if(document.getElementById('idleScrim')) return;
+  if(Date.now() - lastActivity > IDLE_MS){
+    showIdleModal();
+  }
+}
+setInterval(tickIdle, 1000);
+
+function showIdleModal(){
+  let s = COUNTDOWN_S;
+  const kiosk = document.getElementById('kiosk');
+  const scrim = document.createElement('div');
+  scrim.className = 'modal-scrim';
+  scrim.id = 'idleScrim';
+  scrim.innerHTML = `
+    <div class="modal-card">
+      <h3>${t('idleTitle')}</h3>
+      <p id="idleBodyText">${t('idleBody',{s})}</p>
+      <div class="modal-actions">
+        <button class="primary-btn" data-action="idle-continue">${t('idleContinue')}</button>
+        <button class="ghost-btn" data-action="idle-reset">${t('idleReset')}</button>
+      </div>
+    </div>`;
+  kiosk.appendChild(scrim);
+  idleCountdownTimer = setInterval(()=>{
+    s -= 1;
+    const el = document.getElementById('idleBodyText');
+    if(!el){ clearInterval(idleCountdownTimer); return; }
+    el.textContent = t('idleBody',{s});
+    if(s<=0){ clearInterval(idleCountdownTimer); resetToAttract(); }
+  }, 1000);
+}
+
+function resetToAttract(){
+  const scrim = document.getElementById('idleScrim');
+  if(scrim) scrim.remove();
+  clearInterval(idleCountdownTimer);
+  speechSynthesis && speechSynthesis.cancel();
+  state = freshState();
+  render();
+}
+
+function resetToLanguage(){
+  speechSynthesis && speechSynthesis.cancel();
+  const lang = state.lang;
+  state = freshState();
+  state.lang = lang;
+  state.screen = 'language';
+  render();
+}
+
+/* ==================== Navigation ==================== */
+function goTo(screen){
+  state.backStack.push(state.screen);
+  state.screen = screen;
+  conv = null;
+  render();
+}
+
+function goBackScreen(){
+  const prev = state.backStack.pop();
+  if(prev){ state.screen = prev; conv = null; render(); }
+}
+
+/* ==================== Conversation engine ==================== */
+function startConversation(fields, doneKey, onComplete){
+  conv = { fields, index:0, target:{}, awaitingConfirm:false, doneKey, onComplete, transcript:[] };
+  pushSana(fields[0].ask, 0);
+  render();
+}
+
+function pushSana(key, fieldIndex){
+  const text = t(key);
+  conv.transcript.push({ who:'sana', text, fieldIndex });
+  speak(text);
+}
+function pushUser(text, fieldIndex){
+  conv.transcript.push({ who:'user', text, fieldIndex });
+}
+
+function submitAnswer(raw){
+  const value = raw.trim();
+  if(!value) return;
+  const field = conv.fields[conv.index];
+  pushUser(value, conv.index);
+  if(field.confirm){
+    conv._pendingValue = value;
+    conv.awaitingConfirm = true;
+    pushSana2(t('trackConfirmPrefix',{value}), conv.index);
+  }else{
+    acceptField(value);
+  }
+  render();
+}
+
+function pushSana2(text, fieldIndex){
+  conv.transcript.push({ who:'sana', text, fieldIndex });
+  speak(text);
+}
+
+function acceptField(value){
+  const field = conv.fields[conv.index];
+  conv.target[field.key] = value;
+  conv.index += 1;
+  conv.awaitingConfirm = false;
+  if(conv.index < conv.fields.length){
+    pushSana(conv.fields[conv.index].ask, conv.index);
+  }else{
+    const doneText = t(conv.doneKey, { name: conv.target.name || '' });
+    conv.transcript.push({ who:'sana', text:doneText, fieldIndex:conv.index, isDone:true });
+    speak(doneText);
+  }
+}
+
+function confirmYes(){
+  acceptField(conv._pendingValue);
+  render();
+}
+function confirmNo(){
+  conv.awaitingConfirm = false;
+  conv.transcript = conv.transcript.filter(e=>e.fieldIndex < conv.index);
+  pushSana(conv.fields[conv.index].ask, conv.index);
+  render();
+}
+
+function convBack(){
+  if(conv.awaitingConfirm){ confirmNo(); return; }
+  const newIndex = conv.index - 1;
+  if(newIndex < 0){ conv = null; goBackScreen(); return; }
+  delete conv.target[conv.fields[newIndex].key];
+  conv.index = newIndex;
+  conv.transcript = conv.transcript.filter(e=>e.fieldIndex < newIndex);
+  conv.transcript.push({ who:'sana', text:t(conv.fields[newIndex].ask), fieldIndex:newIndex });
+  render();
+}
+
+function micToggle(){
+  const btn = document.getElementById('micBtn');
+  const input = document.getElementById('answerInput');
+  const tag = document.getElementById('listeningTag');
+  if(!btn || btn.classList.contains('listening')) return;
+  btn.classList.add('listening');
+  if(tag) tag.textContent = t('listening');
+  setTimeout(()=>{
+    const field = conv.fields[conv.index];
+    const canned = (CANNED[state.lang] && CANNED[state.lang][field.key]) || '';
+    if(input) input.value = canned;
+    btn.classList.remove('listening');
+    if(tag) tag.textContent = '';
+    if(input) input.focus();
+  }, 1200);
+}
+
+/* ==================== Pricing ==================== */
+function computePricing(){
+  const base = state.booking.deliveryType === 'parcel' ? 450 : 250;
+  const mult = state.booking.speed === 'express' ? 1.6 : 1.0;
+  const fare = base * mult;
+  const surcharge = 50;
+  const tax = 0.05 * (fare + surcharge);
+  const total = fare + surcharge + tax;
+  return { fare, surcharge, tax, total };
+}
+
+/* ==================== QR (cosmetic placeholder) ==================== */
+function pseudoRandom(seed){ const x = Math.sin(seed)*10000; return x - Math.floor(x); }
+function inFinder(lx,ly){
+  if(lx===0||lx===6||ly===0||ly===6) return true;
+  if(lx>=2&&lx<=4&&ly>=2&&ly<=4) return true;
+  return false;
+}
+function isFinderCell(x,y,size){
+  if(x<7 && y<7) return inFinder(x,y);
+  if(x>=size-7 && y<7) return inFinder(x-(size-7),y);
+  if(x<7 && y>=size-7) return inFinder(x,y-(size-7));
+  return null;
+}
+function renderQR(seedStr){
+  let seed = 1; for(const c of seedStr) seed += c.charCodeAt(0);
+  const size = 21;
+  let cells = '';
+  for(let y=0;y<size;y++){
+    for(let x=0;x<size;x++){
+      const f = isFinderCell(x,y,size);
+      const on = f!==null ? f : pseudoRandom(seed + x*31 + y*17) > 0.5;
+      cells += `<div class="qr-cell ${on?'on':''}"></div>`;
+    }
+  }
+  return `<div class="qr-grid" style="grid-template-columns:repeat(${size},1fr)">${cells}</div>`;
+}
+
+/* ==================== Screen renderers ==================== */
+function icon(path){ return `<svg viewBox="0 0 24 24">${path}</svg>`; }
+const ICONS = {
+  track:'<path d="M3 7h13v10H3z"/><path d="M16 10h3l2 3v4h-5z"/><circle cx="7" cy="19" r="1.6"/><circle cx="17.5" cy="19" r="1.6"/>',
+  book:'<path d="M4 4h16v16H4z"/><path d="M4 9h16"/><path d="M9 4v5"/>',
+  doc:'<path d="M6 2h9l3 3v17H6z"/><path d="M15 2v3h3"/><path d="M9 12h6"/><path d="M9 16h6"/>',
+  parcel:'<path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 8v9l9 5 9-5V8"/><path d="M12 13v9"/>',
+  bolt:'<path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/>',
+  truck:'<path d="M3 6h11v9H3z"/><path d="M14 10h4l3 3v2h-7z"/><circle cx="7.5" cy="17.5" r="1.6"/><circle cx="17" cy="17.5" r="1.6"/>',
+};
+
+function screenLanguage(){
+  return `
+    <div>
+      <div class="headline">${t('languageHeadline')}</div>
+      <div class="subhead">${t('languageSub')}</div>
+      <div class="rule"></div>
+    </div>
+    <div class="cards-col" style="margin-top:8px;">
+      <div class="card" data-action="select-lang" data-lang="en">
+        <div class="icon">${icon('<path d="M4 5h16v14H4z"/><path d="M4 9h16"/>')}</div>
+        <div class="txt"><div class="title">English</div><div class="desc">Continue in English</div></div>
+      </div>
+      <div class="card" data-action="select-lang" data-lang="ur">
+        <div class="icon">${icon('<path d="M4 5h16v14H4z"/><path d="M4 9h16"/>')}</div>
+        <div class="txt"><div class="title">اردو</div><div class="desc">اردو میں جاری رکھیں</div></div>
+      </div>
+    </div>`;
+}
+
+function screenService(){
+  return `
+    <div>
+      <div class="headline">${t('serviceHeadline')}</div>
+      <div class="rule"></div>
+    </div>
+    <div class="cards-col" style="margin-top:8px;">
+      <div class="card" data-action="select-service" data-service="track">
+        <div class="icon">${icon(ICONS.track)}</div>
+        <div class="txt"><div class="title">${t('serviceTrackTitle')}</div><div class="desc">${t('serviceTrackDesc')}</div></div>
+      </div>
+      <div class="card" data-action="select-service" data-service="book">
+        <div class="icon">${icon(ICONS.book)}</div>
+        <div class="txt"><div class="title">${t('serviceBookTitle')}</div><div class="desc">${t('serviceBookDesc')}</div></div>
+      </div>
+    </div>`;
+}
+
+function renderTranscript(){
+  let html = '<div class="chat">';
+  conv.transcript.forEach(e=>{
+    html += `<div class="bubble ${e.who}">${e.text}</div>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+function screenConversation(){
+  if(!conv) return '';
+  const done = conv.index >= conv.fields.length;
+  let html = `<div>${renderTranscript()}</div>`;
+  if(done){
+    html += `<button class="primary-btn" data-action="conv-continue" style="margin-top:8px;">${t('continueLabel')} →</button>`;
+  }else if(conv.awaitingConfirm){
+    html += `
+      <div class="chip-row">
+        <button class="chip yes" data-action="confirm-yes">${t('yes')}</button>
+        <button class="chip no" data-action="confirm-no">${t('no')}</button>
+      </div>`;
+  }else{
+    html += `
+      <div class="composer">
+        <input id="answerInput" type="text" placeholder="${t('composerPlaceholder')}" autocomplete="off" />
+        <button class="mic-btn" id="micBtn" data-action="mic-toggle">${icon('<path d="M12 3a3 3 0 013 3v6a3 3 0 01-6 0V6a3 3 0 013-3z"/><path d="M5 11a7 7 0 0014 0"/><path d="M12 18v3"/>')}</button>
+        <button class="send-btn" data-action="send-answer">${icon('<path d="M4 12h16"/><path d="M14 6l6 6-6 6"/>')}</button>
+      </div>
+      <div class="listening-tag" id="listeningTag"></div>`;
+  }
+  return html;
+}
+
+function screenTrackResult(){
+  const r = state.trackResult;
+  const steps = [
+    { key:'statusBooked', done:r.stepIndex>=0 },
+    { key:'statusPicked', done:r.stepIndex>=1 },
+    { key:'statusTransit', done:r.stepIndex>=2 },
+    { key:'statusOut', done:r.stepIndex>=3 },
+    { key:'statusDelivered', done:r.stepIndex>=4 },
+  ];
+  let rows = '';
+  steps.forEach((s,i)=>{
+    rows += `
+      <div class="t-row">
+        <div class="t-marker-col">
+          <div class="t-dot ${s.done?'done':''}"></div>
+          ${i<steps.length-1?`<div class="t-bar ${steps[i+1].done?'done':''}"></div>`:''}
+        </div>
+        <div class="t-body">
+          <div class="t-title ${s.done?'done':''}">${t(s.key)}</div>
+        </div>
+      </div>`;
+  });
+  return `
+    <div>
+      <div class="headline">${t('trackResultHeadline')}</div>
+      <div class="subhead">${r.number}</div>
+      <div class="rule"></div>
+    </div>
+    <div class="summary-card">
+      <div class="s-row"><div class="k">${t('trackResultEta')}</div><div class="v">${r.eta}</div></div>
+    </div>
+    <div class="timeline">${rows}</div>
+    <button class="primary-btn" data-action="new-request">${t('newRequest')}</button>`;
+}
+
+function screenDeliverType(){
+  return `
+    <div>
+      <div class="headline">${t('deliverTypeHeadline')}</div>
+      <div class="rule"></div>
+    </div>
+    <div class="cards-col" style="margin-top:8px;">
+      <div class="card" data-action="select-delivery-type" data-type="document">
+        <div class="icon">${icon(ICONS.doc)}</div>
+        <div class="txt"><div class="title">${t('docTitle')}</div><div class="desc">${t('docDesc')}</div></div>
+      </div>
+      <div class="card" data-action="select-delivery-type" data-type="parcel">
+        <div class="icon">${icon(ICONS.parcel)}</div>
+        <div class="txt"><div class="title">${t('parcelTitle')}</div><div class="desc">${t('parcelDesc')}</div></div>
+      </div>
+    </div>`;
+}
+
+function screenSpeed(){
+  return `
+    <div>
+      <div class="headline">${t('speedHeadline')}</div>
+      <div class="rule"></div>
+    </div>
+    <div class="cards-col" style="margin-top:8px;">
+      <div class="card" data-action="select-speed" data-speed="standard">
+        <div class="icon">${icon(ICONS.truck)}</div>
+        <div class="txt"><div class="title">${t('standardTitle')}</div><div class="desc">${t('standardDesc')}</div></div>
+      </div>
+      <div class="card" data-action="select-speed" data-speed="express">
+        <div class="icon">${icon(ICONS.bolt)}</div>
+        <div class="txt"><div class="title">${t('expressTitle')}</div><div class="desc">${t('expressDesc')}</div></div>
+      </div>
+    </div>`;
+}
+
+function fmtRs(n){ return 'Rs. ' + Math.round(n).toLocaleString(); }
+
+function screenReview(){
+  const p = computePricing();
+  const b = state.booking;
+  const itemLabel = b.deliveryType==='parcel' ? t('parcelType') : t('docType');
+  const speedLabel = b.speed==='express' ? t('expressSpeed') : t('standardSpeed');
+  return `
+    <div>
+      <div class="headline">${t('reviewHeadline')}</div>
+      <div class="rule"></div>
+    </div>
+    <div class="summary-card">
+      <div class="s-row"><div class="k">${t('labelItem')}</div><div class="v">${itemLabel}</div></div>
+      <div class="s-row"><div class="k">${t('labelRoute')}</div><div class="v">${b.pickup.city||''} → ${b.dropoff.city||''}</div></div>
+      <div class="s-row"><div class="k">${t('labelService')}</div><div class="v">${speedLabel}</div></div>
+      <div class="s-div"></div>
+      <div class="s-row"><div class="k">${t('labelBase')}</div><div class="v">${fmtRs(p.fare)}</div></div>
+      <div class="s-row"><div class="k">${t('labelSurcharge')}</div><div class="v">${fmtRs(p.surcharge)}</div></div>
+      <div class="s-row"><div class="k">${t('labelTax')}</div><div class="v">${fmtRs(p.tax)}</div></div>
+      <div class="s-div"></div>
+      <div class="s-row total"><div class="k">${t('labelTotal')}</div><div class="v">${fmtRs(p.total)}</div></div>
+    </div>
+    <button class="primary-btn" data-action="confirm-pay">${t('confirmPay')}</button>`;
+}
+
+function screenPayment(){
+  const p = computePricing();
+  if(state.receipt){
+    const r = state.receipt;
+    return `
+      <div style="text-align:center;">
+        <div class="success-badge">${icon('<path d="M5 13l4 4 10-10"/>')}</div>
+        <div class="headline" style="margin-top:14px;">${t('paymentSuccess')}</div>
+      </div>
+      <div class="summary-card">
+        <div class="s-row"><div class="k">${t('receiptNumber')}</div><div class="v">${r.number}</div></div>
+        <div class="s-row"><div class="k">${t('receiptTime')}</div><div class="v">${r.time}</div></div>
+        <div class="s-div"></div>
+        <div class="s-row total"><div class="k">${t('receiptTotal')}</div><div class="v">${fmtRs(r.total)}</div></div>
+      </div>
+      <button class="primary-btn" data-action="new-request">${t('newRequest')}</button>`;
+  }
+  return `
+    <div>
+      <div class="headline">${t('paymentHeadline')}</div>
+      <div class="rule"></div>
+    </div>
+    <div class="qr-card">
+      ${renderQR(state.trackingSeed || 'TCS' + Math.round(p.total))}
+      <div class="raast-tag">Raast Instant Payment</div>
+      <div style="font-size:15px;font-weight:700;color:var(--ink);">${fmtRs(p.total)}</div>
+      <div style="font-size:13px;color:var(--slate);display:flex;align-items:center;gap:8px;"><span class="spinner"></span>${t('paymentWaiting')}</div>
+    </div>
+    <button class="ghost-btn" data-action="simulate-payment">${t('simulatePayment')}</button>`;
+}
+
+/* ==================== Master render ==================== */
+function render(){
+  const kiosk = document.getElementById('kiosk');
+  const content = document.getElementById('content');
+  const dict = DICT[state.lang];
+  kiosk.setAttribute('dir', dict.dir);
+  content.setAttribute('dir', dict.dir);
+
+  document.getElementById('attractOverlay').classList.toggle('hidden', state.screen !== 'attract');
+  document.getElementById('attractTitle').textContent = t('attractTitle');
+  document.getElementById('attractTap').textContent = t('attractTap');
+  document.getElementById('bottomBar').classList.toggle('hidden', state.screen==='attract');
+  document.getElementById('backLabel').textContent = t('back');
+  document.getElementById('homeLabel').textContent = t('home');
+  document.getElementById('backBtn').disabled = (state.backStack.length===0 && !conv) || state.screen==='attract';
+
+  const stepper = document.getElementById('stepper');
+  const stepIdx = BOOKING_STEPS.indexOf(state.screen);
+  if(stepIdx >= 0){
+    stepper.classList.remove('hidden');
+    stepper.innerHTML = BOOKING_STEPS.map((s,i)=>`<div class="seg ${i<=stepIdx?'done':''}"></div>`).join('');
+  }else{
+    stepper.classList.add('hidden');
+  }
+
+  let html = '';
+  switch(state.screen){
+    case 'language': html = screenLanguage(); break;
+    case 'service': html = screenService(); break;
+    case 'track': html = screenConversation(); break;
+    case 'trackResult': html = screenTrackResult(); break;
+    case 'deliverType': html = screenDeliverType(); break;
+    case 'pickup': html = screenConversation(); break;
+    case 'dropoff': html = screenConversation(); break;
+    case 'speed': html = screenSpeed(); break;
+    case 'review': html = screenReview(); break;
+    case 'payment': html = screenPayment(); break;
+    default: html = '';
+  }
+  content.innerHTML = html;
+
+  const input = document.getElementById('answerInput');
+  if(input){
+    input.focus();
+    input.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ submitAnswer(input.value); } });
+  }
+}
+
+/* ==================== Flow transitions ==================== */
+function onLanguageSelected(lang){
+  state.lang = lang;
+  goTo('service');
+  setTimeout(()=>speak(t('serviceHeadline')), 250);
+}
+
+function onServiceSelected(svc){
+  if(svc === 'track'){
+    goTo('track');
+    startConversation([{key:'trackingNumber', ask:'trackAsk', confirm:true}], 'trackFoundMsg', null);
+  }else{
+    goTo('deliverType');
+    setTimeout(()=>speak(t('deliverTypeHeadline')), 200);
+  }
+}
+
+function buildTrackResult(number){
+  let hash = 0; for(const c of number) hash += c.charCodeAt(0);
+  const stepIndex = hash % 5;
+  const days = 4 - stepIndex + 1;
+  const eta = new Date(Date.now() + days*86400000);
+  const etaStr = eta.toLocaleDateString(undefined,{weekday:'long', month:'short', day:'numeric'});
+  return { number, stepIndex, eta: etaStr };
+}
+
+function onDeliveryTypeSelected(type){
+  state.booking.deliveryType = type;
+  goTo('pickup');
+  startConversation(
+    [{key:'name',ask:'askName'},{key:'phone',ask:'askPhone',confirm:true},{key:'street',ask:'askStreet'},{key:'city',ask:'askCity'}],
+    'pickupDoneMsg', null
+  );
+}
+
+function onSpeedSelected(speed){
+  state.booking.speed = speed;
+  goTo('review');
+}
+
+function generateReceipt(){
+  const p = computePricing();
+  const number = 'RC' + Math.floor(100000 + Math.random()*900000);
+  const time = new Date().toLocaleString(undefined,{ dateStyle:'medium', timeStyle:'short' });
+  return { number, time, total: p.total };
+}
+
+/* ==================== Event delegation ==================== */
+document.addEventListener('click', function(e){
+  const el = e.target.closest('[data-action]');
+  markActivity();
+  if(!el) return;
+  const action = el.dataset.action;
+
+  switch(action){
+    case 'tap-start':
+      state.screen = 'language';
+      render();
+      setTimeout(()=>speak(t('welcomeGreeting')), 200);
+      break;
+    case 'select-lang':
+      onLanguageSelected(el.dataset.lang);
+      break;
+    case 'select-service':
+      onServiceSelected(el.dataset.service);
+      break;
+    case 'select-delivery-type':
+      onDeliveryTypeSelected(el.dataset.type);
+      break;
+    case 'select-speed':
+      onSpeedSelected(el.dataset.speed);
+      break;
+    case 'send-answer': {
+      const input = document.getElementById('answerInput');
+      if(input) submitAnswer(input.value);
+      break;
+    }
+    case 'mic-toggle':
+      micToggle();
+      break;
+    case 'confirm-yes':
+      confirmYes();
+      break;
+    case 'confirm-no':
+      confirmNo();
+      break;
+    case 'conv-continue': {
+      if(state.screen === 'track'){
+        state.trackResult = buildTrackResult(conv.target.trackingNumber);
+        state.trackingSeed = conv.target.trackingNumber;
+        goTo('trackResult');
+      }else if(state.screen === 'pickup'){
+        state.booking.pickup = conv.target;
+        goTo('dropoff');
+        startConversation(
+          [{key:'name',ask:'askRecipientName'},{key:'phone',ask:'askRecipientPhone',confirm:true},{key:'street',ask:'askRecipientStreet'},{key:'city',ask:'askRecipientCity'}],
+          'dropoffDoneMsg', null
+        );
+      }else if(state.screen === 'dropoff'){
+        state.booking.dropoff = conv.target;
+        goTo('speed');
+        setTimeout(()=>speak(t('speedHeadline')), 200);
+      }
+      break;
+    }
+    case 'confirm-pay':
+      goTo('payment');
+      setTimeout(()=>speak(t('paymentHeadline')), 200);
+      break;
+    case 'simulate-payment':
+      setTimeout(()=>{ state.receipt = generateReceipt(); render(); speak(t('paymentSuccess')); }, 900);
+      break;
+    case 'new-request':
+      resetToLanguage();
+      break;
+    case 'go-back':
+      if(conv){ convBack(); } else { goBackScreen(); }
+      break;
+    case 'go-home':
+      resetToLanguage();
+      break;
+    case 'idle-continue':
+      markActivity();
+      break;
+    case 'idle-reset':
+      resetToAttract();
+      break;
+  }
+});
+
+document.addEventListener('pointerdown', markActivity);
+document.addEventListener('keydown', markActivity);
+
+render();
+})();
+</script>
+
+<script type="module"
+      src="https://agent.d-id.com/v2/index.js"
+      data-mode="fabio"
+      data-client-key="ck_rWMyV_zhzG6aF_3Y0ruoY"
+      data-agent-id="v2_agt_iOJs5lGb"
+      data-name="did-agent"
+      data-monitor="true"
+      data-orientation="horizontal"
+      data-position="right"
+      data-open-mode="expanded">
+</script>
+</body>
+</html>
