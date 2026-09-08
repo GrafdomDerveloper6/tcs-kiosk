@@ -5,11 +5,6 @@ type TranscriptTurn = { role: "user" | "avatar"; text: string };
 const EXTRACTION_SCHEMA = {
   type: "object",
   properties: {
-    complete: {
-      type: "boolean",
-      description:
-        "True only once every required field has been mentioned AND the customer has confirmed it's correct.",
-    },
     deliveryType: { type: ["string", "null"], enum: ["document", "parcel", null] },
     pickupName: { type: ["string", "null"] },
     pickupPhone: { type: ["string", "null"] },
@@ -22,7 +17,6 @@ const EXTRACTION_SCHEMA = {
     speed: { type: ["string", "null"], enum: ["standard", "express", null] },
   },
   required: [
-    "complete",
     "deliveryType",
     "pickupName",
     "pickupPhone",
@@ -43,7 +37,7 @@ Extract whatever booking fields they've mentioned so far: deliveryType (document
 
 deliveryType and speed are chosen by tapping the screen on later steps rather than by voice, so Sana won't ask about them — only fill them in on the off-chance the customer volunteers them unprompted.
 
-Set "complete" to true ONLY when all eight contact details (both names, both phone numbers, both street addresses, both cities) have been mentioned AND the customer has verbally confirmed they're correct (e.g. said "yes", "that's right", "correct"). deliveryType and speed are NOT required for "complete". Leave any field not yet mentioned as null. Never guess or invent values that weren't actually said.`;
+Leave any field not yet mentioned as null. Never guess or invent values that weren't actually said. There's no "is this all done and confirmed" judgment call to make here — the app itself decides when to move on based on which fields are filled in, not on anything you return.`;
 
 export async function POST(req: Request) {
   const apiKey = process.env.OPENAI_API_KEY;

@@ -110,10 +110,11 @@ export function freshAssistantState(): AssistantState {
   return { draft: freshBookingDraft(), avatarStarted: false };
 }
 
-/** Shape /api/extract-booking returns — same field names as BookingDraft
- *  (all nullable) plus a completion flag. */
+/** Shape /api/extract-booking returns — same field names as BookingDraft,
+ *  all nullable. Whether a phase is "done" is decided by the app itself
+ *  (isPickupComplete/isDropoffComplete against the merged draft), not by
+ *  anything this endpoint judges — it only ever reports what was said. */
 export type BookingExtraction = {
-  complete: boolean;
   deliveryType: DeliveryType;
   pickupName: string | null;
   pickupPhone: string | null;

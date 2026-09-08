@@ -14,7 +14,12 @@ import {
   type Screen,
   type Speed,
 } from "@/lib/kiosk-types";
-import { generateReceipt, isPickupComplete, mergeExtractionIntoDraft } from "@/lib/kiosk-utils";
+import {
+  generateReceipt,
+  isDropoffComplete,
+  isPickupComplete,
+  mergeExtractionIntoDraft,
+} from "@/lib/kiosk-utils";
 import { useLiveAvatarSession, type TranscriptTurn } from "./useLiveAvatarSession";
 
 const IDLE_MS = 90000;
@@ -190,17 +195,17 @@ export function useKiosk() {
     const draft = mergeExtractionIntoDraft(assistantRef.current.draft, extraction);
     setAssistant((prev) => ({ ...prev, draft }));
 
-    /* Voice-driven auto-advance: the "complete" flag from extraction only
-     * ever covers all eight fields (pickup + delivery) plus confirmation —
-     * it can't fire from pickup alone. Checking isPickupComplete directly
-     * is what lets the app move straight to the delivery-details screen the
-     * moment pickup is done, without waiting for a manual Continue tap.
-     * Sana keeps going on her own (her prompt already asks for pickup then
-     * delivery in order) since the avatar session survives the page hop —
-     * nothing else needs to happen here beyond switching the screen. */
-    if (stateRef.current.screen === "pickup" && isPickupComplete(draft)) {
+    /* Voice-driven auto-advance, symmetric across both detail screens: the
+     * moment the four fields for whichever screen is currently showing are
+     * known, move straight on — no manual Continue tap, and (for dropoff)
+     * no waiting on a spoken confirmation round-trip either. Once delivery
+     * details are done, the customer takes it from there by touch (item
+     * type, speed, review, payment are all tap-only screens anyway), so
+     * there's nothing left for Sana's job to gate on. */
+    const screen = stateRef.current.screen;
+    if (screen === "pickup" && isPickupComplete(draft)) {
       finalizePickupRef.current();
-    } else if (extraction.complete) {
+    } else if (screen === "dropoff" && isDropoffComplete(draft)) {
       finalizeRef.current();
     }
   }, []);
