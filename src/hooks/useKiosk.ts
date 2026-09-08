@@ -14,7 +14,7 @@ import {
   type Screen,
   type Speed,
 } from "@/lib/kiosk-types";
-import { generateReceipt, mergeExtractionIntoDraft } from "@/lib/kiosk-utils";
+import { generateReceipt, isPickupComplete, mergeExtractionIntoDraft } from "@/lib/kiosk-utils";
 import { useLiveAvatarSession, type TranscriptTurn } from "./useLiveAvatarSession";
 
 const IDLE_MS = 90000;
@@ -174,7 +174,7 @@ export function useKiosk() {
 
   const startAssistantVoice = useCallback(() => {
     setAssistant((prev) => ({ ...prev, avatarStarted: true }));
-    avatar.start();
+    avatar.start(stateRef.current.lang);
   }, [avatar.start]);
 
   const cancelAssistantVoice = useCallback(() => {
@@ -184,13 +184,25 @@ export function useKiosk() {
 
 
   const finalizeRef = useRef<() => void>(() => {});
+  const finalizePickupRef = useRef<() => void>(() => {});
 
   const applyExtraction = useCallback((extraction: BookingExtraction) => {
-    setAssistant((prev) => ({
-      ...prev,
-      draft: mergeExtractionIntoDraft(prev.draft, extraction),
-    }));
-    if (extraction.complete) finalizeRef.current();
+    const draft = mergeExtractionIntoDraft(assistantRef.current.draft, extraction);
+    setAssistant((prev) => ({ ...prev, draft }));
+
+    /* Voice-driven auto-advance: the "complete" flag from extraction only
+     * ever covers all eight fields (pickup + delivery) plus confirmation —
+     * it can't fire from pickup alone. Checking isPickupComplete directly
+     * is what lets the app move straight to the delivery-details screen the
+     * moment pickup is done, without waiting for a manual Continue tap.
+     * Sana keeps going on her own (her prompt already asks for pickup then
+     * delivery in order) since the avatar session survives the page hop —
+     * nothing else needs to happen here beyond switching the screen. */
+    if (stateRef.current.screen === "pickup" && isPickupComplete(draft)) {
+      finalizePickupRef.current();
+    } else if (extraction.complete) {
+      finalizeRef.current();
+    }
   }, []);
 
   const extractingRef = useRef(false);
@@ -241,7 +253,9 @@ export function useKiosk() {
   }, [avatar.transcript, runExtraction]);
 
   /** Pickup → delivery. The avatar stays connected across the hop (goTo
-   *  only hangs up when leaving the form screens). */
+   *  only hangs up when leaving the form screens). Called by the Continue
+   *  button, and — via applyExtraction above — automatically the moment
+   *  voice fills in the last pickup field, no tap required. */
   const finalizePickup = useCallback(() => {
     goTo("dropoff");
   }, [goTo]);
@@ -253,6 +267,10 @@ export function useKiosk() {
     avatar.stop();
     goTo("deliveryType");
   }, [goTo, avatar.stop]);
+
+  useEffect(() => {
+    finalizePickupRef.current = finalizePickup;
+  }, [finalizePickup]);
 
   useEffect(() => {
     finalizeRef.current = finalizeAssistant;

@@ -1,10 +1,23 @@
 import { NextResponse } from "next/server";
 
+// LiveAvatar's own ASR runs against a specific language model per session —
+// it defaults to "en" if we never say otherwise, which is exactly why a
+// customer speaking Urdu was getting badly mangled recognition regardless
+// of which UI language they picked. LiveAvatar has no native "ur" code
+// (checked its /v1/languages list directly), but Urdu and Hindi are the
+// same spoken language for ASR purposes — same phonology and grammar,
+// different script — so "hi" is the deliberate, well-established stand-in
+// rather than falling back to English or an unhinted "auto" mode.
+const STT_LANGUAGE_BY_UI_LANG: Record<string, string> = {
+  en: "en",
+  ur: "hi",
+};
+
 // Mints a short-lived LiveAvatar session token server-side. LIVEAVATAR_API_KEY
 // is a secret that must never reach the browser — this route is the only
 // place it's read, and only a session_token (already scoped to one session)
 // is returned to the client.
-export async function POST() {
+export async function POST(req: Request) {
   const apiKey = process.env.LIVEAVATAR_API_KEY;
   const avatarId = process.env.LIVEAVATAR_AVATAR_ID;
   const llmConfigId = process.env.LIVEAVATAR_LLM_CONFIG_ID;
@@ -16,6 +29,9 @@ export async function POST() {
       { status: 500 }
     );
   }
+
+  const body = await req.json().catch(() => ({}));
+  const sttLanguage = STT_LANGUAGE_BY_UI_LANG[body?.lang] ?? "en";
 
   // FULL mode (with an LLM config + context) lets the avatar hold an
   // open-ended, natural conversation instead of just repeating text we feed
@@ -34,7 +50,7 @@ export async function POST() {
             avatar_id: avatarId,
             mode: "FULL",
             llm_configuration_id: llmConfigId,
-            avatar_persona: { context_id: contextId },
+            avatar_persona: { context_id: contextId, language: sttLanguage },
           }
         : {
             avatar_id: avatarId,
