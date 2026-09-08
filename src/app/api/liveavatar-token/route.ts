@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
 
-// LiveAvatar's own ASR/session pipeline runs against a specific language
-// model — it defaults to "en" if we never say otherwise. Forced to "hi" for
-// every session regardless of which UI language the customer picked: same
-// voice, same accent, but her speech recognition and pronunciation handling
-// always run in Hindi mode now. (LiveAvatar has no native "ur" code — its
-// /v1/languages list doesn't carry one — and Urdu/Hindi are the same spoken
-// language for this purpose: same phonology and grammar, different script.)
-const SESSION_LANGUAGE = "hi";
+// Tried "hi" here (LiveAvatar has no native "ur" code, and Urdu/Hindi are
+// close enough phonologically that it seemed like a reasonable stand-in) on
+// the theory it might help recognize Urdu speech. Live-tested and reverted:
+// it made actual output quality worse, not better — plain "en" (the
+// original default) sounds right. Leave it here unless someone has a real
+// reason to touch it again.
+const SESSION_LANGUAGE = "en";
 
 // A moderate ~15% slowdown (1.0 is normal pace) — the customer specifically
 // asked to slow her down "a bit", not a lot, and 0.85 is comfortably inside
