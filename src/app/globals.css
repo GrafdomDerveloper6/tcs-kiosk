@@ -228,22 +228,24 @@ h3 {
   position: relative;
   align-self: stretch;
 }
-/* No box, no border: the video is soft-vignetted so its rectangular edges
-   fade into the page instead of reading as a bordered tile. LiveAvatar has
-   no true transparent / chroma-key output, so this is the closest honest
-   approximation of a cutout without running our own real-time segmentation
-   on kiosk hardware.
-
-   The mask belongs on the video alone — on the column it also faded every
-   control layered over it, washing out the buttons and clipping the
-   "voice unavailable" notice near the bottom edge. */
-.assistant-avatar-col video {
+/* The raw video keeps playing off-screen (still needed for audio and for
+   LiveAvatar's own attach()/play() calls) — .avatar-keyed-canvas is what's
+   actually shown, redrawn every frame with the green screen keyed out to a
+   real cutout (see useChromaKeyCanvas). No box, no border, no vignette hack
+   needed anymore: a real cutout on a white page just IS the page. */
+.avatar-source-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
+}
+.avatar-keyed-canvas {
   width: 100%;
   height: 100%;
   object-fit: contain;
   display: block;
-  mask-image: radial-gradient(ellipse 72% 88% at 50% 42%, #000 55%, transparent 100%);
-  -webkit-mask-image: radial-gradient(ellipse 72% 88% at 50% 42%, #000 55%, transparent 100%);
 }
 
 /* Assistant screen gets a larger headline than the narrower screens. */

@@ -5,6 +5,13 @@ import type { AssistantState, BookingDraft } from "@/lib/kiosk-types";
 import { isDropoffComplete, isPickupComplete } from "@/lib/kiosk-utils";
 import { t, type Lang } from "@/lib/i18n";
 import { Icon } from "../icons";
+import { useChromaKeyCanvas } from "@/hooks/useChromaKeyCanvas";
+
+// The avatar's own green-screen backdrop, sampled directly from a captured
+// live frame (see tune-key.js) — this is a flat, evenly lit screen, so a
+// single exact color plus a feathered distance band is enough for a clean
+// key without per-avatar recalibration.
+const GREEN_SCREEN_KEY = [0, 216, 2] as const;
 
 /** A text input that briefly pulses when its value changes while the
  *  customer isn't actively typing in it — i.e. the avatar just filled it
@@ -88,6 +95,16 @@ export function AssistantScreen({
    * not "live" however far the start attempt got — derived rather than
    * stored so Talk frees itself up for a retry the moment it fails. */
   const live = assistant.avatarStarted && !failed;
+
+  // The <video> keeps playing (audio, LiveAvatar's own attach()/play() calls)
+  // but stays invisible — the <canvas> beside it is what's actually shown,
+  // redrawn every frame with the green screen keyed out. Two refs on one
+  // element: setAvatarVideoEl hands it to the session hook for attach(),
+  // videoRef is what the chroma-key loop reads frames from.
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  useChromaKeyCanvas(videoRef, canvasRef, live, { keyColor: GREEN_SCREEN_KEY });
+
   const isPickup = section === "pickup";
   const complete = isPickup ? isPickupComplete(draft) : isDropoffComplete(draft);
 
@@ -131,7 +148,16 @@ export function AssistantScreen({
       </div>
 
       <div className="assistant-avatar-col">
-        <video ref={(el) => setAvatarVideoEl(el)} autoPlay playsInline />
+        <video
+          ref={(el) => {
+            videoRef.current = el;
+            setAvatarVideoEl(el);
+          }}
+          className="avatar-source-video"
+          autoPlay
+          playsInline
+        />
+        <canvas ref={canvasRef} className="avatar-keyed-canvas" />
         {needsUnmute && (
           <button className="voice-unmute-btn" onClick={onUnmute} aria-label={t(lang, "voiceUnmute")}>
             <Icon name="volumeMuted" />
