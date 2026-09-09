@@ -10,18 +10,35 @@ export type Screen =
   | "review"
   | "payment";
 
-export const BOOKING_STEPS: Screen[] = [
-  "pickup",
-  "dropoff",
-  "deliveryType",
-  "speed",
-  "review",
-  "payment",
+/** The five steps the customer sees in the progress bar — deliberately
+ *  coarser than the screen list. Item type and speed are both just "what
+ *  are you sending", and the fare review is part of paying, so each of
+ *  those pairs reads as one step instead of padding the bar out to one dot
+ *  per screen. Confirmation has no screen of its own: it's the payment
+ *  screen once a receipt exists. */
+export const BOOKING_STEP_GROUPS: { labelKey: string; screens: Screen[] }[] = [
+  { labelKey: "stepPickupDetails", screens: ["pickup"] },
+  { labelKey: "stepDeliveryDetails", screens: ["dropoff"] },
+  { labelKey: "stepParcelInfo", screens: ["deliveryType", "speed"] },
+  { labelKey: "stepPayment", screens: ["review", "payment"] },
+  { labelKey: "stepConfirmation", screens: [] },
 ];
+
+/** Which of the five steps is showing, or -1 on a screen outside the flow. */
+export function currentStepIndex(screen: Screen, paid: boolean): number {
+  if (screen === "payment" && paid) return BOOKING_STEP_GROUPS.length - 1;
+  return BOOKING_STEP_GROUPS.findIndex((group) => group.screens.includes(screen));
+}
 
 /** The two screens that collect contact details by voice + touch, where the
  *  avatar session stays alive as the customer moves between them. */
 export const FORM_SCREENS: Screen[] = ["pickup", "dropoff"];
+
+/** Screens that use the wide landscape frame instead of the narrower
+ *  centered-column one — a separate list from FORM_SCREENS on purpose:
+ *  this one is purely about layout width, that one is about avatar-session
+ *  continuity, and "language" needs the former without the latter. */
+export const WIDE_SCREENS: Screen[] = [...FORM_SCREENS, "language"];
 
 export type DeliveryType = "document" | "parcel" | null;
 export type Speed = "standard" | "express" | null;

@@ -179,7 +179,7 @@ export function useKiosk() {
 
   const startAssistantVoice = useCallback(() => {
     setAssistant((prev) => ({ ...prev, avatarStarted: true }));
-    avatar.start();
+    avatar.start(stateRef.current.lang);
   }, [avatar.start]);
 
   const cancelAssistantVoice = useCallback(() => {

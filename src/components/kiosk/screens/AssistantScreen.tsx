@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
 import type { AssistantState, BookingDraft } from "@/lib/kiosk-types";
 import { isDropoffComplete, isPickupComplete } from "@/lib/kiosk-utils";
 import { t, type Lang } from "@/lib/i18n";
-import { Icon } from "../icons";
+import { Icon, type IconName } from "../icons";
 import { useChromaKeyCanvas } from "@/hooks/useChromaKeyCanvas";
 
 // The avatar's own green-screen backdrop, sampled directly from a captured
@@ -22,11 +22,13 @@ function LiveField({
   value,
   onChange,
   placeholder,
+  icon,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
+  icon: IconName;
 }) {
   const [justFilled, setJustFilled] = useState(false);
   const prevValue = useRef(value);
@@ -44,20 +46,27 @@ function LiveField({
 
   return (
     <label className="field">
-      <span className="field-label">{label}</span>
-      <input
-        className={`field-input ${justFilled ? "filled" : ""}`}
-        type="text"
-        value={value}
-        placeholder={placeholder}
-        onFocus={() => {
-          focusedRef.current = true;
-        }}
-        onBlur={() => {
-          focusedRef.current = false;
-        }}
-        onChange={(e) => onChange(e.target.value)}
-      />
+      <span className="field-input-wrap">
+        {/* Label rides on the input's top border (an outlined-field notch),
+            so it labels the box without taking a row of its own. */}
+        <span className="field-label">{label}</span>
+        <span className="field-input-icon">
+          <Icon name={icon} />
+        </span>
+        <input
+          className={`field-input ${justFilled ? "filled" : ""}`}
+          type="text"
+          value={value}
+          placeholder={placeholder}
+          onFocus={() => {
+            focusedRef.current = true;
+          }}
+          onBlur={() => {
+            focusedRef.current = false;
+          }}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      </span>
     </label>
   );
 }
@@ -66,6 +75,7 @@ function LiveField({
  *  same live-filling draft — only which four fields are on screen differs. */
 export function AssistantScreen({
   section,
+  stepper,
   assistant,
   lang,
   userSpeaking,
@@ -80,6 +90,9 @@ export function AssistantScreen({
   onContinue,
 }: {
   section: "pickup" | "dropoff";
+  /** Progress bar, mounted in this column so the avatar panel beside it can
+   *  run the full height of the frame. */
+  stepper: ReactNode;
   assistant: AssistantState;
   lang: Lang;
   userSpeaking: boolean;
@@ -111,112 +124,158 @@ export function AssistantScreen({
   const isPickup = section === "pickup";
   const complete = isPickup ? isPickupComplete(draft) : isDropoffComplete(draft);
 
+  /* "Type instead" only shows once she isn't listening (see the live/cancel
+   * swap below), so it just needs to raise the keyboard on the first field
+   * still waiting on an answer — no session to drop here. */
+  const formRef = useRef<HTMLDivElement | null>(null);
+  const focusFirstEmptyField = () => {
+    const inputs = Array.from(formRef.current?.querySelectorAll("input") ?? []);
+    (inputs.find((input) => !input.value.trim()) ?? inputs[0])?.focus();
+  };
+
   const fields = isPickup
     ? ([
-        ["fieldName", "pickupName"],
-        ["fieldPhone", "pickupPhone"],
-        ["fieldStreet", "pickupStreet"],
-        ["fieldCity", "pickupCity"],
+        ["fieldName", "fieldNamePlaceholder", "pickupName", "person"],
+        ["fieldPhone", "fieldPhonePlaceholder", "pickupPhone", "phone"],
+        ["fieldStreet", "fieldStreetPlaceholder", "pickupStreet", "pin"],
+        ["fieldCity", "fieldCityPlaceholder", "pickupCity", "building"],
       ] as const)
     : ([
-        ["fieldName", "dropoffName"],
-        ["fieldPhone", "dropoffPhone"],
-        ["fieldStreet", "dropoffStreet"],
-        ["fieldCity", "dropoffCity"],
+        ["fieldName", "fieldNamePlaceholder", "dropoffName", "person"],
+        ["fieldPhone", "fieldPhonePlaceholder", "dropoffPhone", "phone"],
+        ["fieldStreet", "fieldStreetPlaceholder", "dropoffStreet", "pin"],
+        ["fieldCity", "fieldCityPlaceholder", "dropoffCity", "building"],
       ] as const);
 
   return (
     <div className="assistant-layout">
       <div className="assistant-form-col">
+        {stepper}
         <div className="headline">
-          {t(lang, isPickup ? "pickupHeadline" : "dropoffHeadline")}
+          {t(lang, isPickup ? "pickupHeadline" : "dropoffHeadline")}{" "}
+          <span className="headline-accent">
+            {t(lang, isPickup ? "pickupHeadlineAccent" : "dropoffHeadlineAccent")}
+          </span>
         </div>
         <div className="subhead">{t(lang, "assistantSub")}</div>
-        <div className="rule" />
 
-        <div className="field-form">
-          {fields.map(([labelKey, key]) => (
+        <div className="field-form" ref={formRef}>
+          {fields.map(([labelKey, placeholderKey, key, icon]) => (
             <LiveField
               key={key}
               label={t(lang, labelKey)}
+              placeholder={t(lang, placeholderKey)}
               value={draft[key]}
               onChange={(v) => onUpdateField(key, v)}
+              icon={icon}
             />
           ))}
         </div>
 
         <button className="primary-btn assistant-continue" disabled={!complete} onClick={onContinue}>
           {t(lang, "continueLabel")}
+          <Icon name="send" />
         </button>
       </div>
 
       <div className="assistant-avatar-col">
-        <video
-          ref={(el) => {
-            videoRef.current = el;
-            setAvatarVideoEl(el);
-          }}
-          className="avatar-source-video"
-          autoPlay
-          playsInline
-        />
-        {/* A fixed-proportion portrait frame, centered in the column —
-            the source is a landscape 1280x720 shot, and the column's own
-            aspect ratio swings from near-square down to a thin vertical
-            strip depending on screen size. Fitting the raw landscape frame
-            straight into that (object-fit: contain) shrank her to a small
-            floating image on narrower screens; cropping it straight (cover)
-            looked right there but sliced into her hair at wider ones. A
-            frame with its own stable aspect ratio sidesteps both. */}
+        {/* Decorative backdrop she stands in front of — her cutout's real
+            transparency shows it straight through. Never mirrored under
+            RTL: it carries TCS branding that would read backwards. */}
+        <div className="avatar-bg-fx" aria-hidden="true">
+          <Image
+            src="/avatar-backdrop.png"
+            alt=""
+            fill
+            priority
+            sizes="(max-width: 900px) 40vw, 44vw"
+            className="avatar-bg-img"
+          />
+        </div>
+
+        {/* Full-bleed portrait, not boxed into its own card — she's meant
+            to read as one continuous scene with the backdrop above, with
+            her real (chroma-keyed / cutout) transparency showing it
+            straight through rather than sitting on a separate panel. */}
         <div className="avatar-frame">
+          <video
+            ref={(el) => {
+              videoRef.current = el;
+              setAvatarVideoEl(el);
+            }}
+            className="avatar-source-video"
+            autoPlay
+            playsInline
+          />
           {/* A static photo of Sana, always on screen — HeyGen's own preview
               image for this avatar, already a genuine cutout (real alpha
               channel, not baked-in white). Talk only replaces this with the
               live feed once the stream actually has frames to show; without
-              it the avatar column would just be empty white space until the
+              it the avatar column would just be empty backdrop until the
               first live frame arrives, several seconds after tapping Talk. */}
           <Image
             src="/sana-poster.png"
             alt=""
             fill
             priority
+            sizes="(max-width: 900px) 40vw, 44vw"
             className="avatar-poster"
             hidden={ready}
           />
           <canvas ref={canvasRef} className="avatar-keyed-canvas" hidden={!ready} />
         </div>
+
         {needsUnmute && (
           <button className="voice-unmute-btn" onClick={onUnmute} aria-label={t(lang, "voiceUnmute")}>
             <Icon name="volumeMuted" />
           </button>
         )}
-        {/* Mic, notice and buttons share one bottom-anchored stack so they
-            lay out in normal flow and can't overlap each other at any width
-            — positioning each one absolutely meant hand-tuning clearances
-            per breakpoint, and they collided on narrow screens anyway. */}
+
         <div className="voice-controls">
-          {live && (
-            <div className={`voice-mic-indicator ${userSpeaking ? "listening" : ""}`}>
-              <Icon name="mic" />
-            </div>
-          )}
           {failed && <div className="voice-error">{t(lang, "voiceUnavailable")}</div>}
-          <div className="voice-buttons">
-            <button
-              className="voice-btn voice-btn-talk"
-              disabled={live}
-              onClick={onStartVoice}
-            >
-              <Icon name="mic" />
-              {t(lang, "talkLabel")}
-            </button>
-            <button
-              className="voice-btn voice-btn-cancel"
-              disabled={!live}
-              onClick={onCancelVoice}
-            >
-              {t(lang, "cancelLabel")}
-            </button>
+          <div className="voice-card">
+            <div className="voice-cell voice-cell-mic">
+              <div className="voice-mic-wrap">
+                <span className={`voice-wave ${live ? "active" : ""} ${userSpeaking ? "loud" : ""}`} aria-hidden="true">
+                  <i /><i /><i /><i /><i />
+                </span>
+                <button
+                  className={`voice-mic-btn ${live ? "live" : ""} ${userSpeaking ? "listening" : ""}`}
+                  disabled={live}
+                  onClick={onStartVoice}
+                  aria-label={t(lang, "talkLabel")}
+                >
+                  <Icon name="mic" />
+                </button>
+                <span className={`voice-wave ${live ? "active" : ""} ${userSpeaking ? "loud" : ""}`} aria-hidden="true">
+                  <i /><i /><i /><i /><i />
+                </span>
+              </div>
+              <span className="voice-cell-label">{t(lang, "talkLabel")}</span>
+            </div>
+            <span className="voice-card-divider" />
+            {/* While she's listening, the second cell swaps to Cancel — the
+                thing a customer actually wants right then is to stop her,
+                not to jump into typing. It reverts to Type instead the
+                moment the session ends (onCancelVoice or a normal finish). */}
+            {live ? (
+              <button
+                className="voice-cell voice-cell-type voice-cell-cancel"
+                onClick={onCancelVoice}
+              >
+                <span className="voice-type-icon voice-type-icon-cancel">
+                  <Icon name="close" />
+                </span>
+                <span className="voice-cell-label">{t(lang, "cancelLabel")}</span>
+              </button>
+            ) : (
+              <button className="voice-cell voice-cell-type" onClick={focusFirstEmptyField}>
+                <span className="voice-type-icon">
+                  <Icon name="keyboard" />
+                </span>
+                <span className="voice-cell-label">{t(lang, "typeInstead")}</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

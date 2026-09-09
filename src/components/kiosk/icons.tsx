@@ -17,13 +17,25 @@ const ICON_PATHS: Record<string, string> = {
   chat: '<path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>',
   volumeMuted:
     '<path d="M11 5 6 9H2v6h4l5 4z"/><path d="M23 9l-6 6"/><path d="M17 9l6 6"/>',
+  headset:
+    '<path d="M4 13v-1a8 8 0 0116 0v1"/><rect x="2" y="13" width="5" height="7" rx="2"/><rect x="17" y="13" width="5" height="7" rx="2"/><path d="M20 20v1a3 3 0 01-3 3h-4"/>',
+  person:
+    '<circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0116 0v1"/>',
+  phone:
+    '<path d="M6.6 10.8c1.4 2.8 3.8 5.2 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.3 21 3 13.7 3 4.9 3 4.4 3.4 4 4 4h3.4c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.4 0 .8-.2 1z"/>',
+  pin: '<path d="M12 21s7-6.7 7-12a7 7 0 00-14 0c0 5.3 7 12 7 12z"/><circle cx="12" cy="9" r="2.4"/>',
+  building:
+    '<rect x="4" y="3" width="10" height="18"/><rect x="14" y="9" width="6" height="12"/><path d="M7 7h.01M11 7h.01M7 11h.01M11 11h.01M7 15h.01M11 15h.01"/>',
+  close: '<path d="M6 6l12 12"/><path d="M18 6L6 18"/>',
 };
+
+export type IconName = keyof typeof ICON_PATHS;
 
 export function Icon({
   name,
   className,
 }: {
-  name: keyof typeof ICON_PATHS;
+  name: IconName;
   className?: string;
 }) {
   return (

@@ -5,8 +5,6 @@ import { useEffect, useRef } from "react";
 type ChromaKeyOptions = {
   /** The exact background color to remove, as [r, g, b] (0-255). */
   keyColor: readonly [number, number, number];
-  /** The color to composite in its place. */
-  bgColor?: readonly [number, number, number];
   /** Pixels within this distance of keyColor are fully replaced. */
   innerThreshold?: number;
   /** Pixels beyond this distance are left untouched (fully foreground). */
@@ -20,10 +18,12 @@ type ChromaKeyOptions = {
 
 /**
  * Draws a <video> onto a <canvas> every frame with a solid-color backdrop
- * (a real green screen) keyed out and replaced by bgColor, so the avatar
- * composites as an actual cutout instead of sitting in front of a colored
- * rectangle. Runs entirely in the browser: the video is already decoding
- * (LiveAvatar streams it in), this just reads the pixels back out.
+ * (a real green screen) keyed out to actual alpha transparency — not
+ * composited onto a solid replacement color — so whatever sits behind the
+ * canvas in the page shows straight through, the same way the static
+ * poster's own real alpha channel does. Runs entirely in the browser: the
+ * video is already decoding (LiveAvatar streams it in), this just reads
+ * the pixels back out.
  *
  * Tuned offline against a captured frame from the real avatar rather than
  * guessed — see tune-key.js in the repo history for how innerThreshold /
@@ -35,22 +35,16 @@ export function useChromaKeyCanvas(
   videoRef: React.RefObject<HTMLVideoElement | null>,
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
   active: boolean,
-  {
-    keyColor,
-    bgColor = [255, 255, 255],
-    innerThreshold = 60,
-    outerThreshold = 140,
-    maxWidth = 640,
-  }: ChromaKeyOptions
+  { keyColor, innerThreshold = 60, outerThreshold = 140, maxWidth = 640 }: ChromaKeyOptions
 ) {
   // Read from a ref inside the rAF loop so a parent re-render with new
   // option values doesn't have to restart the loop (identity of the options
   // object isn't guaranteed stable across renders) — synced after each
   // commit via an effect, never written during render itself.
-  const optsRef = useRef({ keyColor, bgColor, innerThreshold, outerThreshold, maxWidth });
+  const optsRef = useRef({ keyColor, innerThreshold, outerThreshold, maxWidth });
   useEffect(() => {
-    optsRef.current = { keyColor, bgColor, innerThreshold, outerThreshold, maxWidth };
-  }, [keyColor, bgColor, innerThreshold, outerThreshold, maxWidth]);
+    optsRef.current = { keyColor, innerThreshold, outerThreshold, maxWidth };
+  }, [keyColor, innerThreshold, outerThreshold, maxWidth]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -68,7 +62,7 @@ export function useChromaKeyCanvas(
       const vw = video.videoWidth;
       const vh = video.videoHeight;
       if (vw && vh) {
-        const { keyColor, bgColor, innerThreshold, outerThreshold, maxWidth } = optsRef.current;
+        const { keyColor, innerThreshold, outerThreshold, maxWidth } = optsRef.current;
         const scale = Math.min(1, maxWidth / vw);
         const w = Math.max(1, Math.round(vw * scale));
         const h = Math.max(1, Math.round(vh * scale));
@@ -80,7 +74,6 @@ export function useChromaKeyCanvas(
         const frame = ctx.getImageData(0, 0, w, h);
         const data = frame.data;
         const [kr, kg, kb] = keyColor;
-        const [bgR, bgG, bgB] = bgColor;
         const span = Math.max(1, outerThreshold - innerThreshold);
         for (let i = 0; i < data.length; i += 4) {
           const r = data[i];
@@ -90,20 +83,20 @@ export function useChromaKeyCanvas(
           const dg = g - kg;
           const db = b - kb;
           const dist = Math.sqrt(dr * dr + dg * dg + db * db);
-          let alpha; // 0 = fully background, 1 = fully original pixel
+          let alpha; // 0 = fully transparent, 1 = fully opaque/original
           if (dist <= innerThreshold) alpha = 0;
           else if (dist >= outerThreshold) alpha = 1;
           else alpha = (dist - innerThreshold) / span;
 
           // Spill suppression: on partially-keyed edge pixels (hair,
           // soft shadow), clamp green down to the stronger of red/blue so
-          // the composite doesn't carry a green fringe.
+          // the cutout doesn't carry a green fringe against whatever ends
+          // up behind it.
           const maxRB = r > b ? r : b;
           const g2 = g > maxRB ? maxRB : g;
 
-          data[i] = r * alpha + bgR * (1 - alpha);
-          data[i + 1] = g2 * alpha + bgG * (1 - alpha);
-          data[i + 2] = b * alpha + bgB * (1 - alpha);
+          data[i + 1] = g2;
+          data[i + 3] = Math.round(alpha * 255);
         }
         ctx.putImageData(frame, 0, 0);
       }

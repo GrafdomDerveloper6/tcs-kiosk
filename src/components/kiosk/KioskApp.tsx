@@ -2,9 +2,15 @@
 
 import { useKiosk } from "@/hooks/useKiosk";
 import { t } from "@/lib/i18n";
-import { BOOKING_STEPS, FORM_SCREENS } from "@/lib/kiosk-types";
+import {
+  BOOKING_STEP_GROUPS,
+  currentStepIndex,
+  FORM_SCREENS,
+  WIDE_SCREENS,
+} from "@/lib/kiosk-types";
 import { Icon } from "./icons";
 import { SelectionScreen } from "./screens/SelectionScreen";
+import { LanguageScreen } from "./screens/LanguageScreen";
 import { AssistantScreen } from "./screens/AssistantScreen";
 import { ReviewScreen } from "./screens/ReviewScreen";
 import { PaymentScreen } from "./screens/PaymentScreen";
@@ -16,26 +22,55 @@ export function KioskApp() {
   const dir = t(lang, "dir");
 
   const backDisabled = state.backStack.length === 0 || state.screen === "attract";
-  const stepIdx = BOOKING_STEPS.indexOf(state.screen);
+  const stepIdx = currentStepIndex(state.screen, state.receipt !== null);
+
+  /* On the two detail screens the avatar panel runs the full height of the
+   * frame, header to footer, so the progress bar belongs inside the form
+   * column beside it rather than as a full-width band above both. Same
+   * markup either way — only where it's mounted changes. */
+  const isSplit = FORM_SCREENS.includes(state.screen);
+  const stepper =
+    stepIdx >= 0 ? (
+      <div className="stepper">
+        {BOOKING_STEP_GROUPS.map((group, i) => (
+          <div
+            key={group.labelKey}
+            className={`step ${i < stepIdx ? "done" : ""} ${i === stepIdx ? "current" : ""}`}
+          >
+            <span className="step-dot">{i < stepIdx ? <Icon name="check" /> : i + 1}</span>
+            <span className="step-label">{t(lang, group.labelKey)}</span>
+            {i < BOOKING_STEP_GROUPS.length - 1 && <span className="step-line" />}
+          </div>
+        ))}
+      </div>
+    ) : null;
 
   return (
     <div className="viewport-bg">
       <div
-        className={`kiosk ${FORM_SCREENS.includes(state.screen) ? "kiosk-hero" : ""}`}
+        className={`kiosk ${WIDE_SCREENS.includes(state.screen) ? "kiosk-hero" : ""} ${
+          isSplit ? "kiosk-split" : ""
+        }`}
         id="kiosk"
         dir={dir}
       >
         <div className="app-header">
-          <div className="app-header-logo">TCS · WE MOVE YOU</div>
+          <div className="app-header-left">
+            <svg className="app-header-mark" viewBox="0 0 64 40" aria-hidden="true">
+              <path d="M2 6 L34 6 L46 20 L34 34 L2 34 L14 20 Z" />
+              <path d="M14 12 L34 12 L40 20 L34 28 L14 28 L20 20 Z" />
+            </svg>
+            <span className="app-header-word">TCS</span>
+            <span className="app-header-divider" />
+            <span className="app-header-tagline">{t(lang, "attractTagline")}</span>
+          </div>
+          <button type="button" className="app-header-help">
+            <Icon name="headset" />
+            <span>{t(lang, "needHelp")}</span>
+          </button>
         </div>
 
-        {stepIdx >= 0 && (
-          <div className="stepper">
-            {BOOKING_STEPS.map((s, i) => (
-              <div key={s} className={`seg ${i <= stepIdx ? "done" : ""}`} />
-            ))}
-          </div>
-        )}
+        {!isSplit && stepper}
 
         <div className="content-wrap">
           <div className="bg-fx">
@@ -63,6 +98,14 @@ export function KioskApp() {
               <Icon name="back" />
               <span>{t(lang, "back")}</span>
             </button>
+            {WIDE_SCREENS.includes(state.screen) && (
+              <div className="bottom-bar-tagline">
+                <span className="bottom-bar-tagline-rule" />
+                <Icon name="truck" />
+                <span>{t(lang, "footerTagline")}</span>
+                <span className="bottom-bar-tagline-rule" />
+              </div>
+            )}
             <button className="nav-btn" onClick={k.onGoHome}>
               <Icon name="home" />
               <span>{t(lang, "home")}</span>
@@ -72,9 +115,55 @@ export function KioskApp() {
 
         {state.screen === "attract" && (
           <div className="attract-overlay" onClick={k.onTapStart}>
+            <svg
+              className="attract-waves"
+              viewBox="0 0 1600 420"
+              preserveAspectRatio="none"
+              aria-hidden="true"
+            >
+              <path
+                className="attract-wave attract-wave-1"
+                d="M0,250 C 200,180 350,320 550,260 C 750,200 900,300 1100,240 C 1300,180 1450,260 1600,220"
+                fill="none"
+              />
+              <path
+                className="attract-wave attract-wave-2"
+                d="M0,300 C 250,220 400,360 600,300 C 800,240 950,340 1150,280 C 1350,220 1500,300 1600,270"
+                fill="none"
+              />
+              <path
+                className="attract-wave attract-wave-3"
+                d="M0,340 C 220,260 380,400 580,340 C 780,280 940,380 1150,320 C 1350,260 1500,340 1600,310"
+                fill="none"
+              />
+            </svg>
+
             <div className="attract-copy">
-              <div className="attract-logo">TCS · WE MOVE YOU</div>
-              <div className="attract-title">{t(lang, "attractTitle")}</div>
+              <svg
+                className="attract-logo-mark"
+                viewBox="0 0 64 40"
+                aria-hidden="true"
+              >
+                <path d="M2 6 L34 6 L46 20 L34 34 L2 34 L14 20 Z" />
+                <path d="M14 12 L34 12 L40 20 L34 28 L14 28 L20 20 Z" />
+              </svg>
+              <div className="attract-wordmark">TCS</div>
+              <div className="attract-tagline">{t(lang, "attractTagline")}</div>
+
+              <div className="attract-title">
+                {t(lang, "attractTitle")}{" "}
+                <span className="attract-title-accent">{t(lang, "attractTitleAccent")}</span>
+              </div>
+              <div className="attract-sub">{t(lang, "attractSub")}</div>
+
+              <div className="attract-mic-ring">
+                <span className="attract-mic-pulse" />
+                <span className="attract-mic-pulse attract-mic-pulse-delay" />
+                <div className="attract-mic-circle">
+                  <Icon name="mic" />
+                </div>
+              </div>
+
               <div className="attract-tap">{t(lang, "attractTap")}</div>
             </div>
           </div>
@@ -103,33 +192,13 @@ export function KioskApp() {
   function renderScreen() {
     switch (state.screen) {
       case "language":
-        return (
-          <SelectionScreen
-            headline={t(lang, "languageHeadline")}
-            subhead={t(lang, "languageSub")}
-            cards={[
-              {
-                key: "en",
-                icon: "language",
-                title: "English",
-                desc: "Continue in English",
-                onSelect: () => k.onLanguageSelected("en"),
-              },
-              {
-                key: "ur",
-                icon: "language",
-                title: "اردو",
-                desc: "اردو میں جاری رکھیں",
-                onSelect: () => k.onLanguageSelected("ur"),
-              },
-            ]}
-          />
-        );
+        return <LanguageScreen lang={lang} onSelect={k.onLanguageSelected} />;
       case "pickup":
       case "dropoff":
         return (
           <AssistantScreen
             section={state.screen === "pickup" ? "pickup" : "dropoff"}
+            stepper={stepper}
             assistant={k.assistant}
             lang={lang}
             userSpeaking={k.userSpeaking}

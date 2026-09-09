@@ -37,7 +37,9 @@ Extract whatever booking fields they've mentioned so far: deliveryType (document
 
 deliveryType and speed are chosen by tapping the screen on later steps rather than by voice, so Sana won't ask about them — only fill them in on the off-chance the customer volunteers them unprompted.
 
-Leave any field not yet mentioned as null. Never guess or invent values that weren't actually said. There's no "is this all done and confirmed" judgment call to make here — the app itself decides when to move on based on which fields are filled in, not on anything you return.`;
+Leave any field not yet mentioned as null. Never guess or invent values that weren't actually said. There's no "is this all done and confirmed" judgment call to make here — the app itself decides when to move on based on which fields are filled in, not on anything you return.
+
+CRITICAL — every text field (pickupName, pickupStreet, pickupCity, dropoffName, dropoffStreet, dropoffCity) must always be written in English/Roman script, no matter what language the conversation is in. The conversation may well be in Urdu — the customer might say their name, street or city in Urdu script or speech. Transliterate it into English regardless: "احمد خان" becomes "Ahmed Khan", "لاہور" becomes "Lahore", "گلبرگ" becomes "Gulberg", and so on. Never output Urdu script (or any non-Latin script) into a field — the on-screen form is English-labelled and must display Latin characters only. Phone numbers are just digits either way.`;
 
 export async function POST(req: Request) {
   const apiKey = process.env.OPENAI_API_KEY;

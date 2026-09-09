@@ -125,41 +125,43 @@ h3 {
   .kiosk-hero .assistant-avatar-col {
     flex-basis: 32%;
   }
-  .voice-btn {
-    padding: 0 12px;
-    font-size: 13px;
+  .voice-mic-btn {
+    width: 58px;
+    height: 58px;
+  }
+  .voice-wave {
+    height: 24px;
   }
   .voice-controls {
     gap: 6px;
   }
 }
 
-/* Phone-width: the avatar column is only ~110px across, far too narrow for
-   Talk and Cancel side by side — they'd hang off the edge. Stack them. */
+/* Phone-width: the avatar column is only ~110px across — no room either
+   side of the mic for the flanking waveform bars, so drop them and shrink
+   what's left instead of letting it overflow the column. */
 @media (max-width: 520px) {
   .voice-controls {
     width: 92%;
     gap: 6px;
   }
-  .voice-buttons {
-    flex-direction: column;
-    width: 100%;
-    gap: 6px;
+  .voice-wave {
+    display: none;
   }
-  .voice-btn {
-    width: 100%;
-    justify-content: center;
-    height: 36px;
-    padding: 0 8px;
-    font-size: 12px;
+  .voice-mic-btn {
+    width: 50px;
+    height: 50px;
   }
-  .voice-mic-indicator {
-    width: 40px;
-    height: 40px;
+  .voice-mic-btn svg {
+    width: 22px;
+    height: 22px;
   }
-  .voice-mic-indicator svg {
-    width: 18px;
-    height: 18px;
+  .voice-type-icon {
+    width: 38px;
+    height: 38px;
+  }
+  .voice-card {
+    padding: 10px 4px 8px;
   }
   .voice-error {
     font-size: 11px;
@@ -173,26 +175,83 @@ h3 {
   flex: 0 0 auto;
   background: var(--ink);
   color: #fff;
-  padding: 18px 20px;
+  padding: 14px 20px;
   border-bottom: 3px solid var(--tcs-red);
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 14px;
   position: relative;
   z-index: 5;
 }
-.app-header-logo {
+.app-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.app-header-mark {
+  width: clamp(18px, 4.4cqw, 24px);
+  height: auto;
+  flex: 0 0 auto;
+  fill: var(--tcs-red);
+}
+.app-header-word {
+  font-family: var(--font-barlow), sans-serif;
   font-weight: 800;
-  letter-spacing: 0.1em;
-  font-size: clamp(11px, 3.4cqw, 14px);
+  font-style: italic;
+  font-size: clamp(15px, 3.8cqw, 19px);
+  color: var(--tcs-red);
+  flex: 0 0 auto;
+}
+.app-header-divider {
+  width: 1px;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.3);
+  flex: 0 0 auto;
+}
+.app-header-tagline {
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  font-size: clamp(10px, 3cqw, 13px);
   text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-header-help {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1.4px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  color: #fff;
+  font-size: clamp(11px, 3cqw, 14px);
+  font-weight: 600;
+  cursor: pointer;
+  flex: 0 0 auto;
+  padding: 9px 18px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.app-header-help:hover {
+  background: rgba(255, 255, 255, 0.13);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+.app-header-help svg {
+  width: 18px;
+  height: 18px;
+  stroke: #fff;
+  fill: none;
+  stroke-width: 1.7;
 }
 @keyframes listenPulse {
   0%,
   100% {
-    box-shadow: 0 0 0 3px rgba(227, 30, 36, 0.7);
+    box-shadow: 0 0 0 9px rgba(255, 255, 255, 0.55), 0 0 0 12px rgba(227, 30, 36, 0.6);
   }
   50% {
-    box-shadow: 0 0 0 7px rgba(227, 30, 36, 0.15);
+    box-shadow: 0 0 0 9px rgba(255, 255, 255, 0.55), 0 0 0 18px rgba(227, 30, 36, 0.12);
   }
 }
 
@@ -223,45 +282,53 @@ h3 {
   container-type: inline-size;
   container-name: assistant-form;
 }
+/* The detail screens are a true split: the avatar panel runs edge to edge
+   on its side, header to footer, so the page padding belongs to the form
+   column rather than to .content wrapping both of them. */
+.kiosk-split .content {
+  padding: 0;
+  gap: 0;
+}
+.kiosk-split .assistant-layout {
+  gap: 0;
+}
+.kiosk-split .assistant-form-col {
+  padding: 14px clamp(18px, 3.7vw, 62px) 20px;
+}
+.kiosk-split .assistant-avatar-col {
+  border-radius: 0;
+}
 .assistant-avatar-col {
-  flex: 0 0 44%;
+  flex: 0 0 40%;
   position: relative;
   align-self: stretch;
-  /* The frame below has its own fixed aspect ratio rather than stretching
-     to fill — the column's own proportions swing from near-square to a
-     thin vertical strip depending on screen size. On the tall-narrow end
-     that leaves real vertical slack; anchoring to the bottom groups her
-     with her own Talk/Cancel controls instead of floating in the middle
-     with empty space split awkwardly above and below. */
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding-bottom: 100px;
-  /* Exposes cqw/cqh below so the frame's exact size can be computed —
-     "size" (not just inline-size) because both dimensions matter for a
-     fixed-aspect box, and the column's own size never depends on this
-     child's, so there's no circularity. */
+  overflow: hidden;
+  border-radius: 26px;
+  /* Sits behind the backdrop image as its loading/letterbox colour. */
+  background: #f7f4f4;
+  /* Exposes cqw/cqh for the control card's own text sizing. */
   container-type: size;
   container-name: avatarcol;
 }
-/* Placed after the base rule above on purpose — a later same-specificity
-   rule always wins regardless of whether its own media condition currently
-   matches, so an earlier copy of this would have been silently overridden
-   by the unconditional padding-bottom above at every width, phone included.
-   Stacked Talk/Cancel below 520px roughly doubles .voice-controls' height,
-   so the bottom-anchored frame needs proportionally more clearance above
-   it: 14 (controls' own bottom offset) + its ~102px stacked height + a
-   40px gap. */
-@media (max-width: 520px) {
-  .assistant-avatar-col {
-    padding-bottom: 156px;
-  }
+.avatar-bg-fx {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+/* Deliberately never mirrored under RTL, unlike the rest of the layout:
+   the backdrop carries TCS branding that would read backwards. */
+.avatar-bg-img {
+  object-fit: cover;
+  object-position: center;
 }
 /* The raw video keeps playing off-screen (still needed for audio and for
    LiveAvatar's own attach()/play() calls) — .avatar-keyed-canvas is what's
    actually shown, redrawn every frame with the green screen keyed out to a
-   real cutout (see useChromaKeyCanvas). No box, no border, no vignette hack
-   needed anymore: a real cutout on a white page just IS the page. */
+   real cutout (see useChromaKeyCanvas). No boxed card around her: her real
+   cutout transparency shows the backdrop above straight through, so she
+   reads as standing in the scene rather than floating on her own panel. */
 .avatar-source-video {
   position: absolute;
   inset: 0;
@@ -270,17 +337,18 @@ h3 {
   opacity: 0;
   pointer-events: none;
 }
-/* A stable 3:4 portrait-photo proportion, independent of the column's own
-   shape. `aspect-ratio` alone doesn't do this — it's a no-op once both
-   width and height are already definite (which 100%/100% both are), so the
-   exact size is computed by hand instead: each dimension takes the smaller
-   of "fill that axis" or "what the OTHER axis, filled, implies at a 3:4
-   ratio" — equivalent to object-fit: contain, but for a real element with
-   children rather than a replaced element. */
+/* Bottom-anchored and deliberately shorter than the column: cover scales
+   her off this box's height, so holding it under full height is what buys
+   the headroom above her head instead of her hair running into the top
+   edge. The cqw cap stops an ultra-narrow column (a phone-width kiosk
+   frame) from scaling her up until only her face is left in frame. */
 .avatar-frame {
-  position: relative;
-  width: min(100cqw, 75cqh);
-  height: min(100cqh, 133.334cqw);
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: min(95cqh, 128cqw);
+  z-index: 1;
 }
 .avatar-poster,
 .avatar-keyed-canvas {
@@ -288,13 +356,18 @@ h3 {
   inset: 0;
   width: 100%;
   height: 100%;
-  /* Cropping is safe here (unlike on the raw landscape source): the frame
-     is always the same 3:4 shape, so this same crop composes consistently
-     everywhere instead of varying with the column's own proportions. */
+  /* The source is a landscape 1280x720 shot inside an always-portrait
+     box, so cover's height-constrained scaling keeps her full vertical
+     extent on screen and only trims the wide transparent margins either
+     side of her — no risk of cropping into her hair. She's centred in
+     the source, so a centred crop centres her in the panel. */
   object-fit: cover;
-  object-position: center 18%;
+  object-position: center center;
   display: block;
 }
+/* Name, role and the speech bubble float over the backdrop beside her
+   rather than captioned on her photo — grouped so the bubble always lands
+   directly under the name block regardless of how long either line runs. */
 /* Guards the toggle above: without this, an element's own `display: block`
    has the same specificity as the browser's built-in `[hidden]` rule and,
    coming later in the cascade, would quietly win — un-hiding it. */
@@ -314,7 +387,10 @@ h3 {
 .field-form {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  /* Wider than it looks: the floating labels straddle each input's top
+     border, so the rows need room between them. */
+  gap: 18px;
+  margin-top: 8px;
 }
 /* Nothing scrolls anywhere in this app — it's a fixed kiosk screen, so every
    step has to fit its frame outright. Four fields per screen leave room to
@@ -324,22 +400,59 @@ h3 {
   flex: 0 0 auto;
 }
 .field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  display: block;
+  position: relative;
 }
+/* Sits on the input's top border with the page colour behind it, notching
+   the outline — so the field is labelled without spending a row on it. */
 .field-label {
-  font-size: clamp(10px, 3cqw, 12px);
+  position: absolute;
+  top: 0;
+  left: 16px;
+  transform: translateY(-50%);
+  z-index: 1;
+  background: var(--paper);
+  padding: 0 6px;
+  font-size: clamp(9px, 2.4cqw, 11px);
   font-weight: 700;
   color: var(--slate);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+[dir="rtl"] .field-label {
+  left: auto;
+  right: 16px;
+}
+.field-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.field-input-icon {
+  position: absolute;
+  left: 17px;
+  display: flex;
+  color: var(--slate);
+  pointer-events: none;
+}
+.field-input-icon svg {
+  width: 19px;
+  height: 19px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+}
+[dir="rtl"] .field-input-icon {
+  left: auto;
+  right: 17px;
 }
 .field-input {
-  border: 1.6px solid var(--line);
-  border-radius: 12px;
-  padding: 0 14px;
-  height: 46px;
+  border: 1.4px solid var(--line);
+  border-radius: 14px;
+  padding: 0 16px 0 46px;
+  height: 54px;
   /* kept >= 16px on purpose: smaller sizes trigger automatic zoom-in on focus in iOS Safari */
   font-size: 16px;
   font-family: inherit;
@@ -348,6 +461,9 @@ h3 {
   min-width: 0;
   width: 100%;
   transition: border-color 0.15s ease, background 0.3s ease, transform 0.25s ease;
+}
+[dir="rtl"] .field-input {
+  padding: 0 46px 0 16px;
 }
 .field-input:focus {
   border-color: var(--tcs-red);
@@ -404,18 +520,104 @@ h3 {
 /* ---------- Stepper ---------- */
 .stepper {
   display: flex;
-  gap: 5px;
-  padding: 10px 20px 0;
+  align-items: flex-start;
+  padding: 12px 20px 0;
   flex: 0 0 auto;
 }
-.stepper .seg {
-  flex: 1;
-  height: 4px;
-  border-radius: 2px;
-  background: var(--line);
+/* On the detail screens it sits inside the form column, which already
+   carries the page padding. */
+.assistant-form-col .stepper {
+  padding: 2px 0 12px;
 }
-.stepper .seg.done {
+.step {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.step-dot {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 1.6px solid var(--line);
+  color: var(--slate);
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  z-index: 1;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+.step-dot svg {
+  width: 14px;
+  height: 14px;
+  stroke: #fff;
+  fill: none;
+  stroke-width: 2.4;
+}
+.step-label {
+  font-size: clamp(9px, 1.9cqw, 13px);
+  font-weight: 700;
+  color: var(--slate);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+/* The connector doubles as the progress bar: filled solid behind every
+   step already done, and part-filled leaving the step being worked on. */
+.step-line {
+  position: absolute;
+  top: 15px;
+  left: 50%;
+  width: 100%;
+  height: 2px;
+  background: var(--line);
+  z-index: 0;
+  overflow: hidden;
+}
+.step-line::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 0;
   background: var(--tcs-red);
+  transition: width 0.35s ease;
+}
+[dir="rtl"] .step-line {
+  left: auto;
+  right: 50%;
+}
+[dir="rtl"] .step-line::after {
+  left: auto;
+  right: 0;
+}
+.step.done .step-dot,
+.step.current .step-dot {
+  background: var(--tcs-red);
+  border-color: var(--tcs-red);
+  color: #fff;
+}
+.step.done .step-line::after {
+  width: 100%;
+}
+.step.current .step-line::after {
+  width: 55%;
+}
+.step.current .step-label {
+  color: var(--tcs-red);
+}
+.step.done .step-label {
+  color: var(--ink);
 }
 
 /* ---------- Content ---------- */
@@ -533,6 +735,9 @@ h3 {
   font-weight: 800;
   color: var(--ink);
   line-height: 1.1;
+}
+.headline-accent {
+  color: var(--tcs-red);
 }
 .subhead {
   font-size: clamp(12px, 3.6cqw, 15px);
@@ -854,7 +1059,8 @@ h3 {
 .voice-unmute-btn {
   position: absolute;
   top: 16px;
-  right: 16px;
+  left: 16px;
+  z-index: 2;
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -868,8 +1074,8 @@ h3 {
   animation: tapPulse 1.6s ease-in-out infinite;
 }
 [dir="rtl"] .voice-unmute-btn {
-  right: auto;
-  left: 16px;
+  left: auto;
+  right: 16px;
 }
 .voice-unmute-btn svg {
   width: 20px;
@@ -878,30 +1084,6 @@ h3 {
   fill: none;
   stroke-width: 1.8;
 }
-.voice-mic-indicator {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: rgba(22, 23, 28, 0.55);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s ease, transform 0.15s ease;
-  flex: 0 0 auto;
-}
-.voice-mic-indicator svg {
-  width: 26px;
-  height: 26px;
-  stroke: #fff;
-  fill: none;
-  stroke-width: 1.8;
-}
-.voice-mic-indicator.listening {
-  background: var(--tcs-red);
-  animation: listenPulse 1.1s ease-in-out infinite;
-}
-
 /* Shown when a session can't start at all (missing key, no credits, no
    network) — otherwise Talk just looks broken with no explanation. */
 .voice-error {
@@ -918,62 +1100,212 @@ h3 {
 }
 .voice-controls {
   position: absolute;
-  bottom: 14px;
+  bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 6;
+  z-index: 3;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  width: max-content;
-  max-width: 94%;
+  gap: 8px;
+  width: calc(100% - 32px);
+  max-width: 560px;
 }
-.voice-buttons {
+/* One elevated card, overlapping the bottom of her photo rather than two
+   separate floating controls — mic (with its flanking waveform bars) on
+   one side, "type instead" on the other, a hairline divider between. */
+.voice-card {
   display: flex;
-  gap: 10px;
+  align-items: stretch;
+  width: 100%;
+  /* Frosted rather than solid, the way the reference lets her jacket read
+     faintly through the card. */
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 24px;
+  box-shadow: 0 18px 38px rgba(22, 23, 28, 0.14);
+  padding: 16px 10px 13px;
 }
-.voice-btn {
-  border-radius: 12px;
-  padding: 0 20px;
-  height: 46px;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
+.voice-cell {
+  min-width: 0;
+  border: none;
+  background: none;
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 8px;
-  transition: background 0.15s ease, transform 0.12s ease, opacity 0.15s ease;
+  cursor: pointer;
+  padding: 0;
 }
-.voice-btn:active:not(:disabled) {
-  transform: scale(0.96);
+/* The mic side carries the flanking waveform bars, so it needs the bigger
+   share of the card — matches the reference's off-centre divider. */
+.voice-cell-mic {
+  flex: 1.75;
 }
-.voice-btn:disabled {
+.voice-cell-type {
+  flex: 1;
+}
+.voice-cell:disabled {
   opacity: 0.4;
   cursor: default;
 }
-.voice-btn svg {
-  width: 18px;
-  height: 18px;
-  stroke: currentColor;
+.voice-card-divider {
+  width: 1px;
+  align-self: stretch;
+  margin: 2px 4px;
+  background: var(--line);
+}
+.voice-mic-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.voice-cell-label {
+  font-size: clamp(10px, 2.8cqw, 12px);
+  font-weight: 700;
+  color: var(--ink);
+}
+.voice-type-icon {
+  width: 48px;
+  height: 48px;
+  /* A squircle, not a circle — the reference pairs the round mic with a
+     rounded-square keyboard key, and the contrast is the point. */
+  border-radius: 15px;
+  background: #fbfbfc;
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.voice-type-icon svg {
+  width: 22px;
+  height: 22px;
+  stroke: var(--ink);
+  fill: none;
+  stroke-width: 1.7;
+}
+/* The mic sits between two rows of decorative bars — still only lit up
+   while a session is actually live, and visibly livelier while the
+   customer is mid-sentence, so the dock reads as "listening" rather than
+   just "on". */
+.voice-wave {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 30px;
+}
+.voice-wave i {
+  display: block;
+  width: 3px;
+  border-radius: 2px;
+  /* Brand-tinted even at rest, the way the reference draws them — grey
+     bars read as a disabled control rather than a voice affordance. */
+  background: rgba(227, 30, 36, 0.3);
+  height: 9px;
+  transition: background 0.2s ease;
+}
+.voice-wave i:nth-child(2) {
+  height: 16px;
+  animation-delay: 0.1s;
+}
+.voice-wave i:nth-child(3) {
+  height: 23px;
+  animation-delay: 0.2s;
+}
+.voice-wave i:nth-child(4) {
+  height: 15px;
+  animation-delay: 0.3s;
+}
+.voice-wave i:nth-child(5) {
+  height: 8px;
+  animation-delay: 0.4s;
+}
+.voice-wave.active i {
+  background: rgba(227, 30, 36, 0.5);
+  animation: waveBar 1.2s ease-in-out infinite;
+}
+.voice-wave.active.loud i {
+  background: var(--tcs-red);
+}
+@keyframes waveBar {
+  0%,
+  100% {
+    transform: scaleY(0.5);
+  }
+  50% {
+    transform: scaleY(1.15);
+  }
+}
+.voice-mic-btn {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  border: none;
+  background: var(--tcs-red);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex: 0 0 auto;
+  /* First layer is the soft white halo the reference sets the mic in; the
+     pulse animations below re-declare it so it survives them. */
+  box-shadow: 0 0 0 9px rgba(255, 255, 255, 0.55), 0 10px 22px rgba(227, 30, 36, 0.3);
+  transition: background 0.15s ease, transform 0.12s ease, box-shadow 0.2s ease;
+}
+.voice-mic-btn svg {
+  width: 28px;
+  height: 28px;
+  stroke: #fff;
   fill: none;
   stroke-width: 1.8;
 }
-.voice-btn-talk {
-  background: var(--tcs-red);
-  color: #fff;
-  border: none;
+.voice-mic-btn:active:not(:disabled) {
+  transform: scale(0.96);
 }
-.voice-btn-talk:hover:not(:disabled) {
+.voice-mic-btn:hover:not(:disabled) {
   background: var(--tcs-red-dark);
 }
-.voice-btn-cancel {
-  background: var(--paper);
-  color: var(--ink);
-  border: 1.6px solid var(--line);
+.voice-mic-btn.live {
+  cursor: default;
+  animation: micLivePulse 1.6s ease-in-out infinite;
 }
-.voice-btn-cancel:hover:not(:disabled) {
-  border-color: var(--tcs-red);
+.voice-mic-btn.live.listening {
+  animation: listenPulse 1.1s ease-in-out infinite;
+}
+@keyframes micLivePulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 9px rgba(255, 255, 255, 0.55), 0 10px 22px rgba(227, 30, 36, 0.3),
+      0 0 0 9px rgba(227, 30, 36, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 9px rgba(255, 255, 255, 0.55), 0 10px 22px rgba(227, 30, 36, 0.3),
+      0 0 0 22px rgba(227, 30, 36, 0);
+  }
+}
+.voice-cell-type:hover:not(:disabled) .voice-type-icon {
+  background: rgba(227, 30, 36, 0.1);
+}
+.voice-cell-type:hover:not(:disabled) .voice-type-icon svg {
+  stroke: var(--tcs-red);
+}
+/* Tinted red at rest, not just on hover — while she's listening, this
+   button already means "stop", so it should read that way immediately. */
+.voice-type-icon-cancel {
+  background: rgba(227, 30, 36, 0.1);
+  border-color: rgba(227, 30, 36, 0.25);
+}
+.voice-type-icon-cancel svg {
+  stroke: var(--tcs-red);
+}
+.voice-cell-cancel:hover .voice-type-icon-cancel {
+  background: rgba(227, 30, 36, 0.18);
+}
+.voice-cell-cancel .voice-cell-label {
   color: var(--tcs-red);
 }
 
@@ -1030,6 +1362,16 @@ h3 {
 }
 .primary-btn:hover {
   background: var(--tcs-red-dark);
+}
+.primary-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+}
+[dir="rtl"] .primary-btn svg {
+  transform: scaleX(-1);
 }
 .primary-btn:active {
   transform: scale(0.97);
@@ -1207,6 +1549,34 @@ h3 {
   background: var(--paper);
   z-index: 5;
 }
+.bottom-bar-tagline {
+  flex: 2 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--slate);
+  font-size: clamp(9px, 2.2cqw, 12px);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+.bottom-bar-tagline svg {
+  width: 16px;
+  height: 16px;
+  stroke: var(--slate);
+  fill: none;
+  stroke-width: 1.8;
+  flex: 0 0 auto;
+}
+.bottom-bar-tagline-rule {
+  flex: 1 1 40px;
+  height: 1px;
+  background: var(--line);
+  max-width: 60px;
+}
 .nav-btn {
   flex: 1;
   min-height: 64px;
@@ -1247,11 +1617,217 @@ h3 {
   border-right: 1px solid var(--line);
 }
 
+/* ---------- Language screen ---------- */
+.lang-screen {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(160px, 28%) minmax(0, 1fr) minmax(180px, 26%);
+  align-items: stretch;
+  gap: clamp(16px, 3cqw, 32px);
+}
+
+.lang-photo {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  background: linear-gradient(160deg, #fdf4f4, #f4f4f6);
+}
+/* The source photo is a square shot, but this panel is usually a tall
+   narrow strip — cover crops it down to a vertical slice, so the position
+   is tuned (not just centered) to keep the rider's face and the box he's
+   holding in that slice rather than the truck/skyline on the right. */
+.lang-photo-img {
+  object-fit: cover;
+  object-position: 28% 38%;
+}
+
+.lang-main {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  padding: 0 4px;
+}
+.lang-headline {
+  font-size: clamp(24px, 4.4cqw, 40px);
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.15;
+}
+.lang-headline-accent {
+  color: var(--tcs-red);
+}
+.lang-sub {
+  margin-top: 8px;
+  font-size: clamp(13px, 2.6cqw, 16px);
+  color: var(--slate);
+}
+.lang-cards {
+  margin-top: clamp(20px, 4cqh, 32px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.lang-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: 18px;
+  border: 1.4px solid var(--line);
+  background: var(--paper);
+  cursor: pointer;
+  text-align: start;
+  font-family: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.12s ease;
+}
+.lang-card:hover {
+  border-color: var(--tcs-red);
+  box-shadow: 0 6px 18px rgba(227, 30, 36, 0.1);
+}
+.lang-card:active {
+  transform: scale(0.98);
+}
+.lang-card-icon {
+  flex: 0 0 auto;
+  width: clamp(40px, 8cqw, 52px);
+  height: clamp(40px, 8cqw, 52px);
+  border-radius: 50%;
+  background: #fdecec;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--tcs-red);
+  font-weight: 800;
+  font-size: clamp(12px, 2.4cqw, 15px);
+}
+.lang-card-icon svg {
+  width: 46%;
+  height: 46%;
+  stroke: var(--tcs-red);
+  fill: none;
+  stroke-width: 1.8;
+}
+.lang-card-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.lang-card-title {
+  font-weight: 700;
+  color: var(--ink);
+  font-size: clamp(15px, 3cqw, 18px);
+}
+.lang-card-desc {
+  font-size: clamp(11px, 2.4cqw, 14px);
+  color: var(--slate);
+  margin-top: 2px;
+}
+.lang-card-arrow {
+  flex: 0 0 auto;
+  display: flex;
+  color: var(--ink-soft);
+}
+.lang-card-arrow svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+}
+[dir="rtl"] .lang-card-arrow svg {
+  transform: scaleX(-1);
+}
+
+.lang-right {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 4px 0;
+}
+/* A stylised "global network" texture, not a literal accurate world map —
+   an evenly scattered dot grid, softly clipped at the edges, plus a couple
+   of accent points standing in for served locations. */
+.lang-map {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  background-image: radial-gradient(rgba(22, 23, 28, 0.1) 1px, transparent 1px);
+  background-size: 13px 13px;
+  -webkit-mask-image: radial-gradient(ellipse 85% 85% at 50% 42%, #000 45%, transparent 92%);
+  mask-image: radial-gradient(ellipse 85% 85% at 50% 42%, #000 45%, transparent 92%);
+}
+.lang-map::before,
+.lang-map::after {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tcs-red);
+  box-shadow: 0 0 0 5px rgba(227, 30, 36, 0.15);
+}
+.lang-map::before {
+  top: 28%;
+  left: 38%;
+}
+.lang-map::after {
+  top: 58%;
+  left: 68%;
+}
+.lang-tagline {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  margin-top: 12px;
+}
+.lang-tagline-bar {
+  width: 3px;
+  border-radius: 2px;
+  background: var(--tcs-red);
+}
+.lang-tagline-text {
+  display: flex;
+  flex-direction: column;
+}
+.lang-tagline-title {
+  font-weight: 700;
+  color: var(--ink);
+  font-size: clamp(12px, 2.4cqw, 15px);
+}
+.lang-tagline-sub {
+  font-size: clamp(10px, 2.1cqw, 13px);
+  color: var(--slate);
+}
+
+/* Narrow screens: three columns side by side stop making sense — stack
+   photo behind/above, content, then the map panel below as a light strip
+   rather than a full third column. */
+@media (max-width: 860px) {
+  .lang-screen {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto;
+  }
+  .lang-photo {
+    display: none;
+  }
+  .lang-right {
+    flex-direction: row;
+    align-items: center;
+  }
+  .lang-map {
+    max-width: 120px;
+  }
+}
+
 /* ---------- Attract overlay ---------- */
 .attract-overlay {
   position: absolute;
   inset: 0;
-  background: var(--ink);
+  background: #0a0a0d;
   color: #fff;
   display: flex;
   flex-direction: column;
@@ -1270,23 +1846,171 @@ h3 {
   z-index: 1;
   padding: 0 26px;
   transition: transform 0.12s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
-.attract-logo {
-  color: var(--tcs-red);
-  font-weight: 800;
-  font-size: clamp(12px, 3.8cqw, 16px);
-  letter-spacing: 0.16em;
+
+/* Logo mark: an abstract double-chevron (not a reproduction of any real
+   wordmark art), just enough of a shape to read as a company mark next to
+   the wordmark text. */
+.attract-logo-mark {
+  width: clamp(40px, 11cqw, 56px);
+  height: auto;
+  fill: var(--tcs-red);
 }
-.attract-title {
-  font-size: clamp(22px, 8cqw, 32px);
-  font-weight: 800;
+.attract-wordmark {
   margin-top: 10px;
+  font-family: var(--font-barlow), sans-serif;
+  font-weight: 800;
+  font-style: italic;
+  font-size: clamp(28px, 9cqw, 42px);
+  color: var(--tcs-red);
+  letter-spacing: 0.02em;
 }
+.attract-tagline {
+  margin-top: 2px;
+  font-size: clamp(11px, 3cqw, 13px);
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--tcs-red);
+}
+
+.attract-title {
+  margin-top: clamp(20px, 5cqh, 36px);
+  font-size: clamp(24px, 7.6cqw, 38px);
+  font-weight: 800;
+  line-height: 1.2;
+  max-width: 18ch;
+}
+.attract-title-accent {
+  color: var(--tcs-red);
+}
+.attract-sub {
+  margin-top: 10px;
+  font-size: clamp(13px, 3.6cqw, 16px);
+  color: #9a9ba3;
+  max-width: 34ch;
+}
+
+/* The mic: a solid dark circle with a soft red glow, and two staggered
+   expanding rings behind it — a "listening / invite to speak" pulse rather
+   than a static icon. */
+.attract-mic-ring {
+  position: relative;
+  margin-top: clamp(24px, 6cqh, 40px);
+  width: clamp(72px, 16cqw, 100px);
+  height: clamp(72px, 16cqw, 100px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.attract-mic-pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--tcs-red);
+  animation: micRingPulse 2.4s ease-out infinite;
+}
+.attract-mic-pulse-delay {
+  animation-delay: 1.2s;
+}
+@keyframes micRingPulse {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+.attract-mic-circle {
+  position: relative;
+  z-index: 1;
+  width: 68%;
+  height: 68%;
+  border-radius: 50%;
+  background: #17181c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 22px 4px rgba(227, 30, 36, 0.55);
+}
+.attract-mic-circle svg {
+  width: 44%;
+  height: 44%;
+  stroke: #fff;
+  fill: none;
+  stroke-width: 1.6;
+}
+
 .attract-tap {
-  margin-top: 16px;
+  margin-top: clamp(16px, 4cqh, 26px);
   font-size: clamp(12px, 3.6cqw, 15px);
-  color: #d8d9de;
+  color: #9a9ba3;
   animation: tapPulse 1.6s ease-in-out infinite;
+}
+
+/* Flowing red ribbon graphics along the bottom edge — a slow, gentle
+   horizontal drift per layer (different durations/directions) reads as
+   depth rather than everything moving in lockstep. */
+.attract-waves {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 45%;
+  pointer-events: none;
+  z-index: 0;
+}
+.attract-wave {
+  stroke: var(--tcs-red);
+  filter: drop-shadow(0 0 6px rgba(227, 30, 36, 0.5));
+}
+.attract-wave-1 {
+  stroke-width: 3;
+  opacity: 0.75;
+  animation: waveDrift1 16s ease-in-out infinite;
+}
+.attract-wave-2 {
+  stroke-width: 2;
+  opacity: 0.4;
+  animation: waveDrift2 22s ease-in-out infinite;
+}
+.attract-wave-3 {
+  stroke-width: 4;
+  opacity: 0.9;
+  animation: waveDrift3 19s ease-in-out infinite;
+}
+@keyframes waveDrift1 {
+  0%,
+  100% {
+    transform: translateX(0) translateY(0);
+  }
+  50% {
+    transform: translateX(-24px) translateY(6px);
+  }
+}
+@keyframes waveDrift2 {
+  0%,
+  100% {
+    transform: translateX(0) translateY(0);
+  }
+  50% {
+    transform: translateX(28px) translateY(-8px);
+  }
+}
+@keyframes waveDrift3 {
+  0%,
+  100% {
+    transform: translateX(0) translateY(0);
+  }
+  50% {
+    transform: translateX(-18px) translateY(4px);
+  }
 }
 @keyframes tapPulse {
   0%,
@@ -1396,7 +2120,12 @@ h3 {
   .card {
     min-height: 48px;
   }
-  .voice-btn {
+  .voice-mic-btn {
+    width: 56px;
+    height: 56px;
+  }
+  .voice-type-icon {
+    width: 40px;
     height: 40px;
   }
   .qr-grid {
