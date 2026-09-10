@@ -2,7 +2,6 @@
 
 import { useCallback, useRef, useState } from "react";
 import type { LiveAvatarSession } from "@heygen/liveavatar-web-sdk";
-import type { Lang } from "@/lib/i18n";
 
 // livekit-client (a dependency of the SDK) touches browser-only globals at
 // import time, so this is loaded lazily/client-side only, not at module top
@@ -66,21 +65,14 @@ export function useLiveAvatarSession() {
     }
   }, []);
 
-  const start = useCallback((lang: Lang): Promise<void> => {
+  const start = useCallback((): Promise<void> => {
     if (startingRef.current) return startingRef.current;
     if (sessionRef.current) return Promise.resolve();
 
     const promise = (async () => {
       try {
         const [{ LiveAvatarSession: Session, SessionEvent, AgentEventsEnum }, res] =
-          await Promise.all([
-            loadSdk(),
-            fetch("/api/liveavatar-token", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ lang }),
-            }),
-          ]);
+          await Promise.all([loadSdk(), fetch("/api/liveavatar-token", { method: "POST" })]);
         if (!res.ok) throw new Error("token request failed");
         const { sessionToken } = await res.json();
         if (!sessionToken) throw new Error("no session token returned");

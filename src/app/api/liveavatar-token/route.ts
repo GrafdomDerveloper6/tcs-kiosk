@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 
-// LiveAvatar has no native "ur" code — Hindi is the closest available
-// stand-in for Urdu speech/output. An earlier attempt to force this
-// session-wide regardless of the customer's own language choice (tried as
-// a way to improve Urdu recognition) was live-tested and reverted for
-// sounding worse, not better. This mapping is different: it only ever
-// requests Hindi when the customer themselves picked Urdu on the language
-// screen, so English sessions are completely unaffected either way.
-const SESSION_LANGUAGE_BY_UI_LANG: Record<string, string> = { en: "en", ur: "hi" };
+// LiveAvatar has no native "ur" code. Two different Hindi stand-ins were
+// tried here and both were live-tested and rejected: first unconditionally
+// for every session, then only when the customer picked Urdu on the
+// language screen. Both came back sounding worse, not better — English is
+// what the session speaks, full stop, regardless of the UI language the
+// customer is reading the screen in. Leave this as a plain constant unless
+// someone has a real, live-tested reason to touch it again.
+const SESSION_LANGUAGE = "en";
 
 // A moderate ~15% slowdown (1.0 is normal pace) — the customer specifically
 // asked to slow her down "a bit", not a lot, and 0.85 is comfortably inside
@@ -24,7 +24,7 @@ const VOICE_SETTINGS = { provider: "elevenLabs" as const, speed: 0.85 };
 // is a secret that must never reach the browser — this route is the only
 // place it's read, and only a session_token (already scoped to one session)
 // is returned to the client.
-export async function POST(req: Request) {
+export async function POST() {
   const apiKey = process.env.LIVEAVATAR_API_KEY;
   const avatarId = process.env.LIVEAVATAR_AVATAR_ID;
   const llmConfigId = process.env.LIVEAVATAR_LLM_CONFIG_ID;
@@ -36,17 +36,6 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
-
-  // Body is optional/best-effort — a request with no body (or a bad one)
-  // just falls back to English rather than failing the whole session.
-  let uiLang = "en";
-  try {
-    const body = await req.json();
-    if (typeof body?.lang === "string") uiLang = body.lang;
-  } catch {
-    /* no body sent — keep the English default */
-  }
-  const sessionLanguage = SESSION_LANGUAGE_BY_UI_LANG[uiLang] ?? "en";
 
   // FULL mode (with an LLM config + context) lets the avatar hold an
   // open-ended, natural conversation instead of just repeating text we feed
@@ -67,7 +56,7 @@ export async function POST(req: Request) {
             llm_configuration_id: llmConfigId,
             avatar_persona: {
               context_id: contextId,
-              language: sessionLanguage,
+              language: SESSION_LANGUAGE,
               voice_settings: VOICE_SETTINGS,
             },
           }
