@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useKiosk } from "@/hooks/useKiosk";
 import { t } from "@/lib/i18n";
 import {
@@ -56,11 +57,14 @@ export function KioskApp() {
       >
         <div className="app-header">
           <div className="app-header-left">
-            <svg className="app-header-mark" viewBox="0 0 64 40" aria-hidden="true">
-              <path d="M2 6 L34 6 L46 20 L34 34 L2 34 L14 20 Z" />
-              <path d="M14 12 L34 12 L40 20 L34 28 L14 28 L20 20 Z" />
-            </svg>
-            <span className="app-header-word">TCS</span>
+            <Image
+              src="/tcs-logo.png"
+              alt="TCS"
+              width={375}
+              height={170}
+              priority
+              className="app-header-logo"
+            />
             <span className="app-header-divider" />
             <span className="app-header-tagline">{t(lang, "attractTagline")}</span>
           </div>
@@ -139,15 +143,14 @@ export function KioskApp() {
             </svg>
 
             <div className="attract-copy">
-              <svg
-                className="attract-logo-mark"
-                viewBox="0 0 64 40"
-                aria-hidden="true"
-              >
-                <path d="M2 6 L34 6 L46 20 L34 34 L2 34 L14 20 Z" />
-                <path d="M14 12 L34 12 L40 20 L34 28 L14 28 L20 20 Z" />
-              </svg>
-              <div className="attract-wordmark">TCS</div>
+              <Image
+                src="/tcs-logo.png"
+                alt="TCS"
+                width={375}
+                height={170}
+                priority
+                className="attract-logo"
+              />
               <div className="attract-tagline">{t(lang, "attractTagline")}</div>
 
               <div className="attract-title">

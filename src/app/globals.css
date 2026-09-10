@@ -190,18 +190,9 @@ h3 {
   gap: 10px;
   min-width: 0;
 }
-.app-header-mark {
-  width: clamp(18px, 4.4cqw, 24px);
-  height: auto;
-  flex: 0 0 auto;
-  fill: var(--tcs-red);
-}
-.app-header-word {
-  font-family: var(--font-barlow), sans-serif;
-  font-weight: 800;
-  font-style: italic;
-  font-size: clamp(15px, 3.8cqw, 19px);
-  color: var(--tcs-red);
+.app-header-logo {
+  width: auto;
+  height: clamp(22px, 5.6cqw, 30px);
   flex: 0 0 auto;
 }
 .app-header-divider {
@@ -1851,22 +1842,10 @@ h3 {
   align-items: center;
 }
 
-/* Logo mark: an abstract double-chevron (not a reproduction of any real
-   wordmark art), just enough of a shape to read as a company mark next to
-   the wordmark text. */
-.attract-logo-mark {
-  width: clamp(40px, 11cqw, 56px);
-  height: auto;
-  fill: var(--tcs-red);
-}
-.attract-wordmark {
-  margin-top: 10px;
-  font-family: var(--font-barlow), sans-serif;
-  font-weight: 800;
-  font-style: italic;
-  font-size: clamp(28px, 9cqw, 42px);
-  color: var(--tcs-red);
-  letter-spacing: 0.02em;
+.attract-logo {
+  width: auto;
+  height: clamp(56px, 15cqw, 92px);
+  margin-bottom: 8px;
 }
 .attract-tagline {
   margin-top: 2px;
