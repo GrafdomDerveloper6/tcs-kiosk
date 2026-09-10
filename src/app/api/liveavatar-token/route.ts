@@ -9,16 +9,17 @@ import { NextResponse } from "next/server";
 // someone has a real, live-tested reason to touch it again.
 const SESSION_LANGUAGE = "en";
 
-// A moderate ~15% slowdown (1.0 is normal pace) — the customer specifically
-// asked to slow her down "a bit", not a lot, and 0.85 is comfortably inside
-// ElevenLabs' accepted 0.8-1.2 range with headroom to go lower later if it's
-// still too fast. The provider itself is a considered guess, not something
-// LiveAvatar exposes for inspection (checked: neither the avatar's own nor
-// the voice's own detail endpoint reports which TTS backend it runs on) —
-// elevenLabs is the field tested clean through an actual session start, not
-// just schema validation, so it's a safe bet even if it turns out to be
-// switching the engine rather than only tuning an existing one.
-const VOICE_SETTINGS = { provider: "elevenLabs" as const, speed: 0.85 };
+// Went from 0.85 to 0.8 (1.0 is normal pace) after a second "still a bit
+// fast" report — 0.8 is ElevenLabs' documented floor, so this is as slow as
+// this setting alone can go; a further request would need a different lever
+// (a different voice, or asking LiveAvatar support about going below 0.8).
+// The provider itself is a considered guess, not something LiveAvatar
+// exposes for inspection (checked: neither the avatar's own nor the voice's
+// own detail endpoint reports which TTS backend it runs on) — elevenLabs is
+// the field tested clean through an actual session start, not just schema
+// validation, so it's a safe bet even if it turns out to be switching the
+// engine rather than only tuning an existing one.
+const VOICE_SETTINGS = { provider: "elevenLabs" as const, speed: 0.8 };
 
 // Mints a short-lived LiveAvatar session token server-side. LIVEAVATAR_API_KEY
 // is a secret that must never reach the browser — this route is the only
