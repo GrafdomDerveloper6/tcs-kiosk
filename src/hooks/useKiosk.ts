@@ -192,7 +192,30 @@ export function useKiosk() {
   const finalizePickupRef = useRef<() => void>(() => {});
 
   const applyExtraction = useCallback((extraction: BookingExtraction) => {
-    const draft = mergeExtractionIntoDraft(assistantRef.current.draft, extraction);
+    const screen = stateRef.current.screen;
+
+    /* /api/extract-booking re-derives EVERY field from the full transcript
+     * on every call, not just what's new — so once the conversation has
+     * moved past pickup, a later extraction call (now looking at a longer
+     * transcript that also contains the dropoff Q&A) can occasionally
+     * misattribute a dropoff answer back onto a pickup field. The merge
+     * below only guards against an explicit null overwriting a value, not
+     * a wrong-but-non-null re-guess replacing an already-correct one — so
+     * without this, a solid pickup answer could silently get clobbered
+     * minutes later while the customer is mid-way through dropoff. Once
+     * we've moved on, pickup is done talking about; lock it. */
+    const pickupLocked = screen !== "pickup";
+    const safeExtraction = pickupLocked
+      ? {
+          ...extraction,
+          pickupName: null,
+          pickupPhone: null,
+          pickupStreet: null,
+          pickupCity: null,
+        }
+      : extraction;
+
+    const draft = mergeExtractionIntoDraft(assistantRef.current.draft, safeExtraction);
     setAssistant((prev) => ({ ...prev, draft }));
 
     /* Voice-driven auto-advance, symmetric across both detail screens: the
@@ -202,7 +225,6 @@ export function useKiosk() {
      * details are done, the customer takes it from there by touch (item
      * type, speed, review, payment are all tap-only screens anyway), so
      * there's nothing left for Sana's job to gate on. */
-    const screen = stateRef.current.screen;
     if (screen === "pickup" && isPickupComplete(draft)) {
       finalizePickupRef.current();
     } else if (screen === "dropoff" && isDropoffComplete(draft)) {
