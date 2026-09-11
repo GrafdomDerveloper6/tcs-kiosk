@@ -46,6 +46,25 @@ h3 {
 [dir="rtl"] button {
   font-family: var(--font-urdu), var(--font-barlow), sans-serif;
 }
+/* Nastaliq slopes diagonally and stacks its dots, so the font reports a
+   default line box around 2.5x the font size where Inter reports ~1.2x.
+   Every element that left line-height at `normal` therefore rendered up to
+   twice as tall in Urdu — measured: header 63->80, stepper 63->76, subhead
+   19->38 — which on a short screen overflowed the form column and pushed
+   Continue underneath the bottom bar. (The headline was the one element
+   that already set line-height explicitly, and it measured identical in
+   both languages — that's what pinned the cause.) Nothing scrolls here, so
+   the fix is an explicit line box rather than whatever the font asks for;
+   1.6 is still generous enough for the script's ascenders and dots. */
+[dir="rtl"],
+/* Form controls are listed separately on purpose: the UA stylesheet sets
+   line-height:normal directly on button/input, which beats inheritance, so
+   they'd otherwise keep the font's oversized default (the header's "Need
+   help?" button measured 55px against 38px in English). */
+[dir="rtl"] button,
+[dir="rtl"] input {
+  line-height: 1.6;
+}
 
 ::selection {
   background: transparent;
@@ -1231,10 +1250,10 @@ h3 {
   }
 }
 .voice-mic-btn {
-  width: 68px;
-  height: 68px;
+  width: 74px;
+  height: 74px;
   border-radius: 50%;
-  border: none;
+  border: 3px solid #fff;
   background: var(--tcs-red);
   color: #fff;
   display: flex;
@@ -1244,12 +1263,18 @@ h3 {
   flex: 0 0 auto;
   /* First layer is the soft white halo the reference sets the mic in; the
      pulse animations below re-declare it so it survives them. */
-  box-shadow: 0 0 0 9px rgba(255, 255, 255, 0.55), 0 10px 22px rgba(227, 30, 36, 0.3);
+  box-shadow: 0 0 0 9px rgba(255, 255, 255, 0.55), 0 10px 26px rgba(227, 30, 36, 0.45);
   transition: background 0.15s ease, transform 0.12s ease, box-shadow 0.2s ease;
+  /* Invites a tap before she's live — a static red circle read as flat and
+     easy to miss against the frosted card, especially in the RTL layout on
+     the darker backdrop. Idle, not urgent: slower and softer than the
+     "she's actually listening" pulses below, which stay far more insistent
+     by comparison. */
+  animation: micIdlePulse 2.4s ease-in-out infinite;
 }
 .voice-mic-btn svg {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   stroke: #fff;
   fill: none;
   stroke-width: 1.8;
@@ -1266,6 +1291,17 @@ h3 {
 }
 .voice-mic-btn.live.listening {
   animation: listenPulse 1.1s ease-in-out infinite;
+}
+@keyframes micIdlePulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 9px rgba(255, 255, 255, 0.55), 0 10px 26px rgba(227, 30, 36, 0.45),
+      0 0 0 9px rgba(227, 30, 36, 0.22);
+  }
+  50% {
+    box-shadow: 0 0 0 9px rgba(255, 255, 255, 0.55), 0 10px 26px rgba(227, 30, 36, 0.45),
+      0 0 0 17px rgba(227, 30, 36, 0);
+  }
 }
 @keyframes micLivePulse {
   0%,
@@ -1336,23 +1372,30 @@ h3 {
 }
 
 .primary-btn {
-  background: var(--tcs-red);
+  /* A flat fill read as low-contrast/washed-out against a page that already
+     uses this same red everywhere (header rule, step dots, headline accent,
+     backdrop) — a gradient plus real elevation gives the primary CTA its
+     own visual weight instead of blending into all the other red. */
+  background: linear-gradient(155deg, var(--tcs-red), var(--tcs-red-dark));
   color: #fff;
   border: none;
   border-radius: 14px;
   min-height: 64px;
   font-size: clamp(14px, 4cqw, 17px);
-  font-weight: 700;
+  font-weight: 800;
+  letter-spacing: 0.01em;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   width: 100%;
-  transition: background 0.15s ease, transform 0.12s ease;
+  box-shadow: 0 10px 24px rgba(227, 30, 36, 0.38), 0 2px 5px rgba(22, 23, 28, 0.1);
+  transition: background 0.15s ease, transform 0.12s ease, box-shadow 0.2s ease, opacity 0.15s ease;
 }
-.primary-btn:hover {
-  background: var(--tcs-red-dark);
+.primary-btn:hover:not(:disabled) {
+  background: linear-gradient(155deg, var(--tcs-red-dark), var(--tcs-red-dark));
+  box-shadow: 0 12px 28px rgba(227, 30, 36, 0.48), 0 2px 5px rgba(22, 23, 28, 0.12);
 }
 .primary-btn svg {
   width: 18px;
@@ -1364,8 +1407,17 @@ h3 {
 [dir="rtl"] .primary-btn svg {
   transform: scaleX(-1);
 }
-.primary-btn:active {
+.primary-btn:active:not(:disabled) {
   transform: scale(0.97);
+}
+/* Was missing entirely — a disabled Continue looked pixel-identical to an
+   enabled one (same solid red), which reads as broken rather than "not
+   ready yet" once the button visually stands out more than it used to. */
+.primary-btn:disabled {
+  background: var(--line);
+  color: var(--slate);
+  box-shadow: none;
+  cursor: default;
 }
 .ghost-btn {
   background: transparent;
@@ -1999,60 +2051,6 @@ h3 {
   50% {
     opacity: 1;
   }
-}
-
-/* ---------- Idle modal ---------- */
-.modal-scrim {
-  position: absolute;
-  inset: 0;
-  background: rgba(10, 10, 12, 0.55);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 20;
-  padding: 24px;
-  animation: scrimIn 0.18s ease both;
-}
-@keyframes scrimIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-.modal-card {
-  background: var(--paper);
-  border-radius: 18px;
-  padding: 22px;
-  width: 100%;
-  max-width: 320px;
-  text-align: center;
-  animation: modalIn 0.22s ease both;
-}
-@keyframes modalIn {
-  from {
-    opacity: 0;
-    transform: scale(0.94);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-.modal-card h3 {
-  font-size: clamp(18px, 6cqw, 24px);
-  color: var(--ink);
-}
-.modal-card p {
-  font-size: clamp(12px, 3.6cqw, 14px);
-  color: var(--slate);
-  margin: 10px 0 16px;
-}
-.modal-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
 }
 
 /* ---------- Short screens ----------

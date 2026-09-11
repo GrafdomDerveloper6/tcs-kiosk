@@ -22,18 +22,12 @@ import {
 } from "@/lib/kiosk-utils";
 import { useLiveAvatarSession, type TranscriptTurn } from "./useLiveAvatarSession";
 
-const IDLE_MS = 90000;
-const COUNTDOWN_S = 15;
-
 export function useKiosk() {
   const [state, setState] = useState<KioskState>(freshState);
   const [assistant, setAssistant] = useState<AssistantState>(freshAssistantState);
-  const [idleVisible, setIdleVisible] = useState(false);
-  const [idleCountdown, setIdleCountdown] = useState(COUNTDOWN_S);
 
   const stateRef = useRef(state);
   const assistantRef = useRef(assistant);
-  const lastActivity = useRef(0);
   const avatar = useLiveAvatarSession();
 
   // Keep "latest value" refs in sync after each commit rather than mutating
@@ -45,63 +39,13 @@ export function useKiosk() {
   useEffect(() => {
     assistantRef.current = assistant;
   }, [assistant]);
-  useEffect(() => {
-    lastActivity.current = Date.now();
-  }, []);
 
-  /* ---------- Idle / reset ---------- */
-  const markActivity = useCallback(() => {
-    lastActivity.current = Date.now();
-    setIdleVisible(false);
-  }, []);
-
+  // Kiosk hardening: no right-click context menu on a public-facing screen.
   useEffect(() => {
-    const onPointerDown = () => markActivity();
-    const onKeyDown = () => markActivity();
     const onContextMenu = (e: Event) => e.preventDefault();
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
     document.addEventListener("contextmenu", onContextMenu);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-      document.removeEventListener("contextmenu", onContextMenu);
-    };
-  }, [markActivity]);
-
-  const resetToAttract = useCallback(() => {
-    avatar.stop();
-    setState(freshState());
-    setAssistant(freshAssistantState());
-    setIdleVisible(false);
-  }, [avatar.stop]);
-
-  useEffect(() => {
-    const iv = setInterval(() => {
-      if (stateRef.current.screen === "attract") return;
-      if (idleVisible) return;
-      if (Date.now() - lastActivity.current > IDLE_MS) {
-        setIdleCountdown(COUNTDOWN_S);
-        setIdleVisible(true);
-      }
-    }, 1000);
-    return () => clearInterval(iv);
-  }, [idleVisible]);
-
-  useEffect(() => {
-    if (!idleVisible) return;
-    const iv = setInterval(() => {
-      setIdleCountdown((s) => {
-        if (s <= 1) {
-          clearInterval(iv);
-          resetToAttract();
-          return COUNTDOWN_S;
-        }
-        return s - 1;
-      });
-    }, 1000);
-    return () => clearInterval(iv);
-  }, [idleVisible, resetToAttract]);
+    return () => document.removeEventListener("contextmenu", onContextMenu);
+  }, []);
 
   /* ---------- Navigation ---------- */
   /** The avatar keeps talking across both detail screens — hanging up
@@ -363,11 +307,7 @@ export function useKiosk() {
     avatarFailed: avatar.failed,
     avatarNeedsUnmute: avatar.needsUnmute,
     unmuteAvatar: avatar.unmute,
-    idleVisible,
-    idleCountdown,
-    markActivity,
     goBackScreen,
-    resetToAttract,
     resetToLanguage,
     onTapStart,
     onLanguageSelected,

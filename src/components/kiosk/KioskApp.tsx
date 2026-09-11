@@ -171,23 +171,6 @@ export function KioskApp() {
             </div>
           </div>
         )}
-
-        {k.idleVisible && (
-          <div className="modal-scrim">
-            <div className="modal-card">
-              <h3>{t(lang, "idleTitle")}</h3>
-              <p>{t(lang, "idleBody", { s: k.idleCountdown })}</p>
-              <div className="modal-actions">
-                <button className="primary-btn" onClick={k.markActivity}>
-                  {t(lang, "idleContinue")}
-                </button>
-                <button className="ghost-btn" onClick={k.resetToAttract}>
-                  {t(lang, "idleReset")}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
