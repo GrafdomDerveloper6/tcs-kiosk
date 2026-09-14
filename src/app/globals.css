@@ -8,6 +8,12 @@
   --line: #e3e3e7;
   --slate: #6b7280;
   --success: #1e9e5a;
+  /* Multiplier every text size is wrapped in (see the calc(... * var(--ts))
+     font-sizes below). English stays exactly as designed at 1; Urdu turns
+     it down because Nastaliq draws noticeably heavier and wider than Inter
+     at the same nominal size. One number to tune, rather than a parallel
+     set of RTL font-size rules that could drift out of sync. */
+  --ts: 1;
 }
 
 * {
@@ -64,6 +70,19 @@ h3 {
 [dir="rtl"] button,
 [dir="rtl"] input {
   line-height: 1.6;
+}
+[dir="rtl"] {
+  --ts: 0.8;
+}
+/* These two clip horizontally on purpose (nowrap + ellipsis, so a long
+   label can't wrap and inflate the header or the stepper), but overflow
+   is not per-axis in CSS — so the 1.6 line box above was also shearing
+   about 5px off the bottom of the Nastaliq glyphs. They get a line box
+   tall enough to contain the script's actual ink; everything else can
+   stay tight because nothing else clips. */
+[dir="rtl"] .step-label,
+[dir="rtl"] .app-header-tagline {
+  line-height: 2.05;
 }
 
 ::selection {
@@ -223,7 +242,7 @@ h3 {
 .app-header-tagline {
   font-weight: 700;
   letter-spacing: 0.14em;
-  font-size: clamp(10px, 3cqw, 13px);
+  font-size: calc(clamp(10px, 3cqw, 13px) * var(--ts));
   text-transform: uppercase;
   white-space: nowrap;
   overflow: hidden;
@@ -237,7 +256,7 @@ h3 {
   border: 1.4px solid rgba(255, 255, 255, 0.3);
   border-radius: 999px;
   color: #fff;
-  font-size: clamp(11px, 3cqw, 14px);
+  font-size: calc(clamp(11px, 3cqw, 14px) * var(--ts));
   font-weight: 600;
   cursor: pointer;
   flex: 0 0 auto;
@@ -387,7 +406,7 @@ h3 {
 
 /* Assistant screen gets a larger headline than the narrower screens. */
 .kiosk-hero .headline {
-  font-size: clamp(26px, 5.6cqw, 42px);
+  font-size: calc(clamp(26px, 5.6cqw, 42px) * var(--ts));
 }
 .assistant-continue {
   flex: 0 0 auto;
@@ -423,7 +442,7 @@ h3 {
   z-index: 1;
   background: var(--paper);
   padding: 0 6px;
-  font-size: clamp(9px, 2.4cqw, 11px);
+  font-size: calc(clamp(9px, 2.4cqw, 11px) * var(--ts));
   font-weight: 700;
   color: var(--slate);
   text-transform: uppercase;
@@ -493,7 +512,7 @@ h3 {
   }
 }
 .field-section-label {
-  font-size: clamp(11px, 3.4cqw, 13px);
+  font-size: calc(clamp(11px, 3.4cqw, 13px) * var(--ts));
   font-weight: 800;
   color: var(--ink);
   margin-top: 4px;
@@ -515,7 +534,7 @@ h3 {
   border-radius: 12px;
   background: var(--paper);
   padding: 10px;
-  font-size: clamp(12px, 3.6cqw, 14px);
+  font-size: calc(clamp(12px, 3.6cqw, 14px) * var(--ts));
   font-weight: 700;
   color: var(--ink);
   cursor: pointer;
@@ -555,7 +574,7 @@ h3 {
   background: var(--paper);
   border: 1.6px solid var(--line);
   color: var(--slate);
-  font-size: 13px;
+  font-size: calc(13px * var(--ts));
   font-weight: 800;
   display: flex;
   align-items: center;
@@ -572,7 +591,7 @@ h3 {
   stroke-width: 2.4;
 }
 .step-label {
-  font-size: clamp(9px, 1.9cqw, 13px);
+  font-size: calc(clamp(9px, 1.9cqw, 13px) * var(--ts));
   font-weight: 700;
   color: var(--slate);
   text-align: center;
@@ -733,7 +752,7 @@ h3 {
 }
 
 .eyebrow {
-  font-size: clamp(10px, 3cqw, 12px);
+  font-size: calc(clamp(10px, 3cqw, 12px) * var(--ts));
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -741,7 +760,7 @@ h3 {
   margin-bottom: 6px;
 }
 .headline {
-  font-size: clamp(20px, 7cqw, 28px);
+  font-size: calc(clamp(20px, 7cqw, 28px) * var(--ts));
   font-weight: 800;
   color: var(--ink);
   line-height: 1.1;
@@ -750,9 +769,15 @@ h3 {
   color: var(--tcs-red);
 }
 .subhead {
-  font-size: clamp(12px, 3.6cqw, 15px);
+  font-size: calc(clamp(12px, 3.6cqw, 15px) * var(--ts));
   color: var(--slate);
   margin-top: 4px;
+}
+/* Nastaliq's loops and dots dip well below its own line box, even at a
+   snug line-height — a 4px gap that reads fine for Inter has the Urdu
+   headline's tails nearly touching the subhead below it. */
+[dir="rtl"] .subhead {
+  margin-top: 16px;
 }
 .rule {
   width: 44px;
@@ -828,11 +853,11 @@ h3 {
 .card .title {
   font-weight: 700;
   color: var(--ink);
-  font-size: clamp(14px, 4.2cqw, 17px);
+  font-size: calc(clamp(14px, 4.2cqw, 17px) * var(--ts));
   font-family: var(--font-inter), sans-serif;
 }
 .card .desc {
-  font-size: clamp(11px, 3.3cqw, 13px);
+  font-size: calc(clamp(11px, 3.3cqw, 13px) * var(--ts));
   color: var(--slate);
   margin-top: 2px;
 }
@@ -1104,7 +1129,7 @@ h3 {
   background: rgba(227, 30, 36, 0.1);
   border: 1px solid rgba(227, 30, 36, 0.35);
   color: var(--tcs-red-dark);
-  font-size: clamp(11px, 3cqw, 13px);
+  font-size: calc(clamp(11px, 3cqw, 13px) * var(--ts));
   font-weight: 700;
   line-height: 1.35;
 }
@@ -1172,7 +1197,7 @@ h3 {
   gap: 10px;
 }
 .voice-cell-label {
-  font-size: clamp(10px, 2.8cqw, 12px);
+  font-size: calc(clamp(10px, 2.8cqw, 12px) * var(--ts));
   font-weight: 700;
   color: var(--ink);
 }
@@ -1349,7 +1374,7 @@ h3 {
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  font-size: clamp(12px, 3.6cqw, 15px);
+  font-size: calc(clamp(12px, 3.6cqw, 15px) * var(--ts));
 }
 .s-row .k {
   color: var(--slate);
@@ -1366,7 +1391,7 @@ h3 {
 }
 .s-row.total .k,
 .s-row.total .v {
-  font-size: clamp(16px, 4.6cqw, 19px);
+  font-size: calc(clamp(16px, 4.6cqw, 19px) * var(--ts));
   font-weight: 800;
   color: var(--ink);
 }
@@ -1381,7 +1406,7 @@ h3 {
   border: none;
   border-radius: 14px;
   min-height: 64px;
-  font-size: clamp(14px, 4cqw, 17px);
+  font-size: calc(clamp(14px, 4cqw, 17px) * var(--ts));
   font-weight: 800;
   letter-spacing: 0.01em;
   cursor: pointer;
@@ -1425,7 +1450,7 @@ h3 {
   border: 1.6px solid var(--tcs-red);
   border-radius: 14px;
   min-height: 56px;
-  font-size: clamp(13px, 3.6cqw, 15px);
+  font-size: calc(clamp(13px, 3.6cqw, 15px) * var(--ts));
   font-weight: 700;
   cursor: pointer;
   width: 100%;
@@ -1503,7 +1528,7 @@ h3 {
   align-self: center;
   padding: 7px 16px;
   border-radius: 999px;
-  font-size: clamp(12px, 3.4cqw, 14px);
+  font-size: calc(clamp(12px, 3.4cqw, 14px) * var(--ts));
   font-weight: 800;
   color: #fff;
   background: var(--ink);
@@ -1515,7 +1540,7 @@ h3 {
   background: #d6202a;
 }
 .wallet-hint {
-  font-size: clamp(11px, 3.2cqw, 13px);
+  font-size: calc(clamp(11px, 3.2cqw, 13px) * var(--ts));
   color: var(--slate);
   text-align: center;
   line-height: 1.45;
@@ -1546,7 +1571,7 @@ h3 {
   background: var(--ink);
 }
 .raast-tag {
-  font-size: clamp(10px, 3cqw, 12px);
+  font-size: calc(clamp(10px, 3cqw, 12px) * var(--ts));
   letter-spacing: 0.08em;
   color: var(--slate);
   font-weight: 700;
@@ -1599,7 +1624,7 @@ h3 {
   justify-content: center;
   gap: 10px;
   color: var(--slate);
-  font-size: clamp(9px, 2.2cqw, 12px);
+  font-size: calc(clamp(9px, 2.2cqw, 12px) * var(--ts));
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1626,7 +1651,7 @@ h3 {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: clamp(12px, 3.6cqw, 15px);
+  font-size: calc(clamp(12px, 3.6cqw, 15px) * var(--ts));
   font-weight: 700;
   color: var(--ink-soft);
   display: flex;
@@ -2084,7 +2109,7 @@ h3 {
     height: 38px;
   }
   .kiosk-hero .headline {
-    font-size: clamp(20px, 4cqw, 26px);
+    font-size: calc(clamp(20px, 4cqw, 26px) * var(--ts));
   }
   .rule {
     margin-top: 6px;
@@ -2109,4 +2134,98 @@ h3 {
     width: 130px;
     height: 130px;
   }
+}
+
+/* ---------- Site password gate ----------
+   Its own small, self-contained page — not part of the kiosk frame/routing
+   at all, so it doesn't touch .kiosk/.viewport-bg and isn't scoped by the
+   container queries above. */
+.site-login-bg {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: radial-gradient(circle at 30% 20%, #1c1d22, var(--ink) 60%);
+}
+.site-login-card {
+  width: 100%;
+  max-width: 340px;
+  background: var(--paper);
+  border-radius: 20px;
+  padding: 32px 28px;
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+.site-login-mark {
+  display: inline-block;
+  font-family: var(--font-barlow), sans-serif;
+  font-weight: 800;
+  font-style: italic;
+  font-size: 22px;
+  color: var(--tcs-red);
+  letter-spacing: 0.02em;
+  margin-bottom: 14px;
+}
+.site-login-title {
+  font-family: var(--font-barlow), sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--ink);
+  margin: 0 0 6px;
+}
+.site-login-sub {
+  font-size: 14px;
+  color: var(--slate);
+  margin: 0 0 20px;
+}
+.site-login-input {
+  width: 100%;
+  height: 48px;
+  border-radius: 12px;
+  border: 1.6px solid var(--line);
+  padding: 0 16px;
+  font-size: 16px;
+  font-family: inherit;
+  color: var(--ink);
+  background: var(--paper);
+  text-align: center;
+  transition: border-color 0.15s ease;
+}
+.site-login-input:focus {
+  outline: none;
+  border-color: var(--tcs-red);
+}
+.site-login-input.error {
+  border-color: var(--tcs-red);
+  background: #fff6f6;
+}
+.site-login-error {
+  color: var(--tcs-red-dark);
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 10px;
+}
+.site-login-btn {
+  width: 100%;
+  height: 48px;
+  margin-top: 16px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(155deg, var(--tcs-red), var(--tcs-red-dark));
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(227, 30, 36, 0.35);
+  transition: transform 0.12s ease, opacity 0.15s ease;
+}
+.site-login-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.site-login-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+  box-shadow: none;
 }
