@@ -491,6 +491,12 @@ h3 {
   width: 100%;
   transition: border-color 0.15s ease, background 0.3s ease, transform 0.25s ease;
 }
+/* Only the placeholder shrinks, not the input itself — the 16px above is
+   pinned to stop iOS Safari zooming in on focus, and that's about what a
+   customer actually types, not the greyed-out hint text. */
+[dir="rtl"] .field-input::placeholder {
+  font-size: 13px;
+}
 [dir="rtl"] .field-input {
   padding: 0 46px 0 16px;
 }
