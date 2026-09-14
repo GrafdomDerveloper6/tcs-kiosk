@@ -775,8 +775,16 @@ h3 {
 }
 /* Nastaliq's loops and dots dip well below its own line box, even at a
    snug line-height — a 4px gap that reads fine for Inter has the Urdu
-   headline's tails nearly touching the subhead below it. */
+   headline's tails nearly touching the subhead below it. Bumped further
+   (16px -> 24px) on request for more visible breathing room throughout. */
 [dir="rtl"] .subhead {
+  margin-top: 24px;
+}
+/* Same reasoning one row up: the stepper sits directly above the headline
+   only on the pickup/dropoff screens (hence scoped to .assistant-form-col,
+   not .headline generally — the language/selection screens' headlines
+   don't follow a stepper and shouldn't gain this gap). */
+[dir="rtl"] .assistant-form-col .headline {
   margin-top: 16px;
 }
 .rule {
