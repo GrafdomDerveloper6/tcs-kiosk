@@ -28,8 +28,23 @@ export function LanguageScreen({
       <div className="lang-main">
         <div className="rule" />
         <div className="lang-headline">
-          {t(lang, "languageHeadline")}{" "}
-          <span className="lang-headline-accent">{t(lang, "languageHeadlineAccent")}</span>
+          {/* "TCS" is a Latin brand name embedded in an Urdu sentence — in
+              RTL flow, whichever of these two pieces comes SECOND in the
+              markup ends up on the visual left. English reads naturally as
+              "Welcome to [TCS]"; Urdu reads naturally as "[TCS] mein khush
+              aamdeed" — TCS first — so the DOM order has to flip for Urdu
+              to land TCS on the right, not just the text content. */}
+          {lang === "ur" ? (
+            <>
+              <span className="lang-headline-accent">{t(lang, "languageHeadlineAccent")}</span>{" "}
+              {t(lang, "languageHeadline")}
+            </>
+          ) : (
+            <>
+              {t(lang, "languageHeadline")}{" "}
+              <span className="lang-headline-accent">{t(lang, "languageHeadlineAccent")}</span>
+            </>
+          )}
         </div>
         <div className="lang-sub">{t(lang, "languageSub")}</div>
 

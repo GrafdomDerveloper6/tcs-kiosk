@@ -1745,6 +1745,13 @@ h3 {
   font-size: clamp(13px, 2.6cqw, 16px);
   color: var(--slate);
 }
+/* Same reasoning as the assistant screens' headline/subhead: Nastaliq's
+   loops and dots dip below its own line box even at a snug line-height, so
+   the 8px gap that reads fine for Inter has the Urdu headline crowding the
+   subtitle below it. */
+[dir="rtl"] .lang-sub {
+  margin-top: 22px;
+}
 .lang-cards {
   margin-top: clamp(20px, 4cqh, 32px);
   display: flex;
