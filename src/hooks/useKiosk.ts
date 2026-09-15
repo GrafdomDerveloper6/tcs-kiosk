@@ -122,11 +122,15 @@ export function useKiosk() {
   );
 
   const startAssistantVoice = useCallback(() => {
+    advancingRef.current = false;
     setAssistant((prev) => ({ ...prev, avatarStarted: true }));
     avatar.start(stateRef.current.lang);
   }, [avatar.start]);
 
   const cancelAssistantVoice = useCallback(() => {
+    // No advancingRef reset needed here: startAssistantVoice already resets
+    // it fresh on the next tap, and nothing schedules a new advance while
+    // voice is stopped (no more transcript events to trigger applyExtraction).
     avatar.stop();
     setAssistant((prev) => ({ ...prev, avatarStarted: false }));
   }, [avatar.stop]);
@@ -134,6 +138,13 @@ export function useKiosk() {
 
   const finalizeRef = useRef<() => void>(() => {});
   const finalizePickupRef = useRef<() => void>(() => {});
+  /* Guards against scheduling a second "wait, then advance" while the first
+   * is still pending — applyExtraction re-fires on every new transcript
+   * entry, and the customer can easily say something else in the several
+   * hundred ms it takes her to actually finish talking. Cleared once the
+   * wait resolves (or the customer cancels/restarts voice), not on every
+   * call, so it only ever blocks a genuine duplicate. */
+  const advancingRef = useRef(false);
 
   const applyExtraction = useCallback((extraction: BookingExtraction) => {
     const screen = stateRef.current.screen;
@@ -164,17 +175,39 @@ export function useKiosk() {
 
     /* Voice-driven auto-advance, symmetric across both detail screens: the
      * moment the four fields for whichever screen is currently showing are
-     * known, move straight on — no manual Continue tap, and (for dropoff)
-     * no waiting on a spoken confirmation round-trip either. Once delivery
-     * details are done, the customer takes it from there by touch (item
-     * type, speed, review, payment are all tap-only screens anyway), so
-     * there's nothing left for Sana's job to gate on. */
+     * known, move on — no manual Continue tap, and (for dropoff) no waiting
+     * on a spoken confirmation round-trip either. Once delivery details are
+     * done, the customer takes it from there by touch (item type, speed,
+     * review, payment are all tap-only screens anyway), so there's nothing
+     * left for Sana's job to gate on.
+     *
+     * It doesn't fire the instant the fields complete, though — that used
+     * to cut her off mid-acknowledgment ("Got it, Lah—") since the screen
+     * changing hangs up her mic input and, from the customer's side, feels
+     * like she got interrupted. waitForAvatarQuiet holds off until she's
+     * actually finished talking (debounced against her replies arriving as
+     * several short chunks, not one clean sentence) before the transition
+     * fires, with its own hard ceiling so a customer is never stuck
+     * waiting on a reply that doesn't wrap up. */
+    const schedule = (finalize: () => void) => {
+      if (advancingRef.current) return;
+      advancingRef.current = true;
+      const screenAtSchedule = screen;
+      avatar.waitForAvatarQuiet(700, 6000).then(() => {
+        advancingRef.current = false;
+        // Only follow through if the customer is still on the screen this
+        // was scheduled for — they may have cancelled voice or gone back
+        // by touch while she was still finishing her line.
+        if (stateRef.current.screen === screenAtSchedule) finalize();
+      });
+    };
+
     if (screen === "pickup" && isPickupComplete(draft)) {
-      finalizePickupRef.current();
+      schedule(() => finalizePickupRef.current());
     } else if (screen === "dropoff" && isDropoffComplete(draft)) {
-      finalizeRef.current();
+      schedule(() => finalizeRef.current());
     }
-  }, []);
+  }, [avatar.waitForAvatarQuiet]);
 
   const extractingRef = useRef(false);
   const pendingTranscriptRef = useRef<TranscriptTurn[] | null>(null);

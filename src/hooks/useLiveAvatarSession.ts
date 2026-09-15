@@ -47,6 +47,11 @@ export function useLiveAvatarSession() {
   const [userSpeaking, setUserSpeaking] = useState(false);
   const startingRef = useRef<Promise<void> | null>(null);
   const readyResolversRef = useRef<Array<() => void>>([]);
+  // Not exposed as state on purpose — nothing renders off these, they only
+  // feed waitForAvatarQuiet's polling loop, and a plain ref avoids a
+  // re-render on every one of her (frequent, chunked) speak events.
+  const avatarSpeakingRef = useRef(false);
+  const avatarActivityAtRef = useRef(0);
 
   const setVideoEl = useCallback((el: HTMLVideoElement | null) => {
     videoElRef.current = el;
@@ -119,6 +124,21 @@ export function useLiveAvatarSession() {
         });
         session.on(AgentEventsEnum.USER_SPEAK_STARTED, () => setUserSpeaking(true));
         session.on(AgentEventsEnum.USER_SPEAK_ENDED, () => setUserSpeaking(false));
+        /* Her replies stream as several short speak_started/ended chunks in
+         * quick succession (observed live: "Got" ends, "it, Sarah" starts
+         * again under a second later) rather than one clean bracket around
+         * the whole sentence — so avatarActivityRef below is read with a
+         * debounce by waitForAvatarQuiet, never straight off the raw ended
+         * event, or advancing the screen would land in the gap between two
+         * chunks of the SAME reply and still feel like a mid-sentence cut. */
+        session.on(AgentEventsEnum.AVATAR_SPEAK_STARTED, () => {
+          avatarSpeakingRef.current = true;
+          avatarActivityAtRef.current = Date.now();
+        });
+        session.on(AgentEventsEnum.AVATAR_SPEAK_ENDED, () => {
+          avatarSpeakingRef.current = false;
+          avatarActivityAtRef.current = Date.now();
+        });
 
         /* Diagnostics only — these never feed the transcript, so they can't
          * double-count a turn. The failure we can't otherwise tell apart is
@@ -165,6 +185,8 @@ export function useLiveAvatarSession() {
     setTranscript([]);
     setUserSpeaking(false);
     readyResolversRef.current = [];
+    avatarSpeakingRef.current = false;
+    avatarActivityAtRef.current = 0;
     if (s) {
       try {
         await s.stop();
@@ -172,6 +194,34 @@ export function useLiveAvatarSession() {
         /* best-effort cleanup */
       }
     }
+  }, []);
+
+  /** Resolves once she's actually finished talking — not on the first
+   *  speak_ended event (her replies arrive as several short chunks back to
+   *  back, so that alone lands in the gap between two pieces of the same
+   *  sentence), but once she's stayed quiet for a continuous debounceMs
+   *  window. maxWaitMs is a hard ceiling regardless, so a customer is never
+   *  stuck on the pickup/dropoff screen waiting on a reply that, for
+   *  whatever reason, never actually finishes. */
+  const waitForAvatarQuiet = useCallback((debounceMs: number, maxWaitMs: number): Promise<void> => {
+    return new Promise((resolve) => {
+      const startedAt = Date.now();
+      let settled = false;
+      const resolveOnce = () => {
+        if (settled) return;
+        settled = true;
+        resolve();
+      };
+      const check = () => {
+        const quiet = !avatarSpeakingRef.current && Date.now() - avatarActivityAtRef.current >= debounceMs;
+        if (quiet || Date.now() - startedAt >= maxWaitMs) {
+          resolveOnce();
+          return;
+        }
+        setTimeout(check, 150);
+      };
+      check();
+    });
   }, []);
 
   /** Resolves once the avatar's stream is ready, or after timeoutMs — whichever
@@ -200,6 +250,7 @@ export function useLiveAvatarSession() {
     needsUnmute,
     unmute,
     waitForReady,
+    waitForAvatarQuiet,
     transcript,
     userSpeaking,
   };
