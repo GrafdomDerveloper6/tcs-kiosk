@@ -196,33 +196,54 @@ export function useLiveAvatarSession() {
     }
   }, []);
 
-  /** Resolves once she's actually finished talking — not on the first
-   *  speak_ended event (her replies arrive as several short chunks back to
-   *  back, so that alone lands in the gap between two pieces of the same
-   *  sentence), but once she's stayed quiet for a continuous debounceMs
-   *  window. maxWaitMs is a hard ceiling regardless, so a customer is never
-   *  stuck on the pickup/dropoff screen waiting on a reply that, for
-   *  whatever reason, never actually finishes. */
-  const waitForAvatarQuiet = useCallback((debounceMs: number, maxWaitMs: number): Promise<void> => {
-    return new Promise((resolve) => {
-      const startedAt = Date.now();
-      let settled = false;
-      const resolveOnce = () => {
-        if (settled) return;
-        settled = true;
-        resolve();
-      };
-      const check = () => {
-        const quiet = !avatarSpeakingRef.current && Date.now() - avatarActivityAtRef.current >= debounceMs;
-        if (quiet || Date.now() - startedAt >= maxWaitMs) {
-          resolveOnce();
-          return;
-        }
-        setTimeout(check, 150);
-      };
-      check();
-    });
-  }, []);
+  /** Resolves once she's actually finished talking in response to
+   *  whatever just triggered this call — NOT once she's simply been quiet
+   *  for debounceMs, which was the bug in an earlier version of this
+   *  function: avatarActivityAtRef holds the timestamp of her PREVIOUS
+   *  reply, and by the time a customer finishes answering the next
+   *  question, it's almost always already been longer than debounceMs
+   *  since that previous reply — so the old check resolved immediately,
+   *  before she'd even started the new acknowledgment, and the screen
+   *  changed out from under a sentence that hadn't begun yet.
+   *
+   *  This version waits out a graceMs window first to see whether she
+   *  starts speaking at all in response — only once she does does the
+   *  debounce logic (stay quiet for a continuous debounceMs, since her
+   *  replies arrive as several short chunks back to back, not one clean
+   *  bracket) take over. If she never starts within graceMs, there's
+   *  nothing to wait for and it resolves right away. maxWaitMs is a hard
+   *  ceiling throughout, so a customer is never stuck on the screen
+   *  waiting on a reply that, for whatever reason, never wraps up. */
+  const waitForAvatarQuiet = useCallback(
+    (graceMs: number, debounceMs: number, maxWaitMs: number): Promise<void> => {
+      return new Promise((resolve) => {
+        const startedAt = Date.now();
+        let sawSpeechThisRound = false;
+        let settled = false;
+        const resolveOnce = () => {
+          if (settled) return;
+          settled = true;
+          resolve();
+        };
+        const check = () => {
+          if (avatarSpeakingRef.current) sawSpeechThisRound = true;
+          const now = Date.now();
+          const quiet =
+            !avatarSpeakingRef.current &&
+            (sawSpeechThisRound
+              ? now - avatarActivityAtRef.current >= debounceMs
+              : now - startedAt >= graceMs);
+          if (quiet || now - startedAt >= maxWaitMs) {
+            resolveOnce();
+            return;
+          }
+          setTimeout(check, 150);
+        };
+        check();
+      });
+    },
+    []
+  );
 
   /** Resolves once the avatar's stream is ready, or after timeoutMs — whichever
    *  comes first. Lets a caller give the avatar a real chance to connect before

@@ -185,15 +185,18 @@ export function useKiosk() {
      * to cut her off mid-acknowledgment ("Got it, Lah—") since the screen
      * changing hangs up her mic input and, from the customer's side, feels
      * like she got interrupted. waitForAvatarQuiet holds off until she's
-     * actually finished talking (debounced against her replies arriving as
-     * several short chunks, not one clean sentence) before the transition
-     * fires, with its own hard ceiling so a customer is never stuck
-     * waiting on a reply that doesn't wrap up. */
+     * actually finished talking: it gives her up to 2.5s to actually START
+     * replying (she often hasn't yet the instant our own extraction call
+     * resolves — that gap is what let the screen change out from under a
+     * reply that hadn't begun), then, once she does start, debounces
+     * against her replies arriving as several short chunks rather than one
+     * clean sentence, with its own hard ceiling so a customer is never
+     * stuck waiting on a reply that doesn't wrap up. */
     const schedule = (finalize: () => void) => {
       if (advancingRef.current) return;
       advancingRef.current = true;
       const screenAtSchedule = screen;
-      avatar.waitForAvatarQuiet(700, 6000).then(() => {
+      avatar.waitForAvatarQuiet(2500, 700, 8000).then(() => {
         advancingRef.current = false;
         // Only follow through if the customer is still on the screen this
         // was scheduled for — they may have cancelled voice or gone back
